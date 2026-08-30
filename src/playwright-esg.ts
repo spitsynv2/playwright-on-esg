@@ -5,7 +5,7 @@ import playwrightPackage from '@playwright/test/package.json';
 
 const hub = process.env.ZEBRUNNER_HUB_URL ? new URL(process.env.ZEBRUNNER_HUB_URL) : undefined;
 
-export const esgHost = (process.env.ESG_HOST || hub?.origin || 'https://engine.zebrunner.dev').replace(/\/+$/, '');
+export const esgHost = (process.env.ESG_HOST || hub?.origin || '').replace(/\/+$/, '');
 export const esgWsHost = esgHost.replace(/^http/, 'ws');
 const esgUser = process.env.ESG_USER || hub?.username || '';
 const esgPassword = process.env.ESG_PASSWORD || hub?.password || '';
@@ -97,6 +97,9 @@ export type EsgRefresh = {
 
 // ESG rejects unauthenticated create requests with an HTML page, not JSON, so guard early.
 export function requireEsgCredentials(): void {
+  if (!esgHost) {
+    throw new Error('Missing ESG host. Set ESG_HOST, or ZEBRUNNER_HUB_URL with the host.');
+  }
   if (!esgUser || !esgPassword) {
     throw new Error(
       `Missing ESG credentials for ${esgHost}. Set ESG_USER and ESG_PASSWORD, or ZEBRUNNER_HUB_URL with credentials.`,

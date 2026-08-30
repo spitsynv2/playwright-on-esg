@@ -35,7 +35,7 @@ Set the ESG host and credentials with one of two methods.
 - Set `ESG_HOST`, `ESG_USER`, and `ESG_PASSWORD` directly.
 - Set `ZEBRUNNER_HUB_URL` with the credentials in the URL. The Zebrunner launcher uses this variable.
 
-`ESG_HOST` default: `https://engine.zebrunner.dev`. The create request needs the credentials. An absent credential fails the test early with a clear message.
+`ESG_HOST` has no default. Set `ESG_HOST`, or set `ZEBRUNNER_HUB_URL` with the host. The create request needs the credentials. An absent host or credential fails the test early with a clear message.
 
 ### Browser
 
