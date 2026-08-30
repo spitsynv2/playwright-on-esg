@@ -1,0 +1,21 @@
+{
+  "name": "playwright-on-esg",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Playwright platform tests that start an ESG session and connect over the native WebSocket",
+  "license": "Apache-2.0",
+  "scripts": {
+    "test": "playwright test",
+    "test:refresh:parallel": "playwright test playwright-on-esg-parallel-refresh.spec.ts",
+    "typecheck": "tsc --noEmit"
+  },
+  "devDependencies": {
+    "@playwright/test": "1.58.2",
+    "@types/node": "^24.9.2",
+    "typescript": "^5.9.2"
+  },
+  "dependencies": {
+    "@zebrunner/javascript-agent-playwright": "github:spitsynv2/javascript-agent-playwright#a4813daa5f925947866fd3514dc15a0ed770087e",
+    "dotenv": "^17.4.2"
+  }
+}
