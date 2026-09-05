@@ -15,7 +15,7 @@
     "typescript": "^5.9.2"
   },
   "dependencies": {
-    "@zebrunner/javascript-agent-playwright": "github:spitsynv2/javascript-agent-playwright#41de9b1becbedf02b5c6eb8aaca082ea77b44789",
+    "@zebrunner/javascript-agent-playwright": "github:spitsynv2/javascript-agent-playwright#b23cfa55d3d23b5745aabf4f16062529de279729",
     "dotenv": "^17.4.2"
   }
 }
