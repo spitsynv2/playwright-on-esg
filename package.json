@@ -7,6 +7,8 @@
   "scripts": {
     "test": "playwright test",
     "test:refresh:parallel": "playwright test playwright-on-esg-parallel-refresh.spec.ts",
+    "test:fileserver-clipboard": "playwright test playwright-on-esg-fileserver-clipboard.spec.ts",
+    "test:refresh-isolation": "playwright test playwright-on-esg-refresh-isolation.spec.ts",
     "typecheck": "tsc --noEmit"
   },
   "devDependencies": {

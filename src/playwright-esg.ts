@@ -1,5 +1,5 @@
 import { chromium, expect, firefox, webkit } from '@playwright/test';
-import type { BrowserType, Page } from '@playwright/test';
+import type { BrowserType, Download, Page } from '@playwright/test';
 import { currentTest } from '@zebrunner/javascript-agent-playwright';
 import playwrightPackage from '@playwright/test/package.json';
 
@@ -15,6 +15,17 @@ export const browserName = process.env.ESG_PLAYWRIGHT_BROWSER_NAME || 'chromium'
 export const playwrightVersion = process.env.ESG_PLAYWRIGHT_VERSION || playwrightPackage.version;
 export const headless = String(process.env.ESG_PLAYWRIGHT_HEADLESS).toLowerCase() === 'true';
 export const refreshBrowserName = process.env.ESG_PLAYWRIGHT_REFRESH_BROWSER_NAME || browserName;
+
+// Data for the download tests, overridable from the environment.
+export const downloadText = process.env.ESG_DOWNLOAD_TEXT || 'Zebrunner fileserver download payload';
+export const downloadFilename = process.env.ESG_DOWNLOAD_FILENAME || 'hello.txt';
+
+// A comma-separated engine list drives the data-driven download tests; defaults to the single engine.
+export function browsersUnderTest(): string[] {
+  const raw = (process.env.ESG_PLAYWRIGHT_BROWSERS || '').trim();
+  if (!raw) return [browserName];
+  return raw.split(',').map((name) => name.trim()).filter(Boolean);
+}
 
 export const createTimeoutMs = Number(process.env.ESG_SESSION_CREATE_TIMEOUT_MS || 600_000);
 export const refreshTimeoutMs = Number(process.env.ESG_PLAYWRIGHT_REFRESH_TIMEOUT_MS || 150_000);
@@ -61,8 +72,8 @@ function zebrunnerOptions(): Record<string, unknown> {
   };
 
   const optional: Record<string, string | number | undefined> = {
-    cpu: envNumber('ESG_CPU'),
-    memory: envNumber('ESG_MEMORY'),
+    cpu: envNumber('ESG_BROWSER_CPU'),
+    memory: envNumber('ESG_BROWSER_MEMORY'),
     maxTimeout: envNumber('ESG_MAX_TIMEOUT'),
     videoScreenSize: envString('ESG_VIDEO_SCREEN_SIZE'),
     frameRate: envNumber('ESG_FRAME_RATE'),
@@ -148,7 +159,7 @@ export function engineFor(name: string): BrowserType {
 
 // Chromium's window is sized by the image launch arg, so a client viewport only adds
 // browser chrome and clips the top; Firefox and WebKit have no such arg and need the viewport.
-function viewportFor(engineName: string): { width: number; height: number } | null {
+export function viewportFor(engineName: string): { width: number; height: number } | null {
   if (headless) return screenViewport;
   const engine = engineName.replace(/^playwright-/, '').toLowerCase();
   if (engine === 'chromium' || engine === 'chrome') return null;
@@ -222,6 +233,67 @@ export async function refreshEsgSession(sessionId: string, engineName: string): 
 export async function deleteEsgSession(sessionId: string): Promise<void> {
   const deleteResponse = await fetch(`${esgHost}/session/${sessionId}`, { method: 'DELETE' });
   currentTest.log.info(`DELETE /session/${sessionId} returned ${deleteResponse.status}.`);
+}
+
+// xseld answers any path, so the sessionId path segment alone routes GET/POST to the clipboard.
+export async function setEsgClipboard(sessionId: string, text: string): Promise<void> {
+  const label = `POST /clipboard/${sessionId}`;
+  const response = await fetch(`${esgHost}/clipboard/${sessionId}`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'text/plain; charset=utf-8' },
+    body: text,
+  });
+  expect(response.ok, `${label} failed (${response.status})`).toBe(true);
+}
+
+export async function getEsgClipboard(sessionId: string): Promise<string> {
+  const label = `GET /clipboard/${sessionId}`;
+  const response = await fetch(`${esgHost}/clipboard/${sessionId}`);
+  expect(response.ok, `${label} failed (${response.status})`).toBe(true);
+  return response.text();
+}
+
+// The download route strips the sessionId, so a trailing path maps onto the fileserver root.
+export function esgDownloadUrl(sessionId: string, name = ''): string {
+  return `${esgHost}/download/${sessionId}/${name}`;
+}
+
+export async function listEsgDownloads(sessionId: string): Promise<string[]> {
+  const label = `GET /download/${sessionId}/?json`;
+  const response = await fetch(`${esgHost}/download/${sessionId}/?json`);
+  expect(response.ok, `${label} failed (${response.status})`).toBe(true);
+  const body = (await response.text()).trim();
+  const parsed = body ? JSON.parse(body) : [];
+  expect(Array.isArray(parsed), `${label} returned non-array: ${body.slice(0, 200)}`).toBe(true);
+  return parsed as string[];
+}
+
+export async function fetchEsgDownload(sessionId: string, name: string): Promise<{ status: number; body: string }> {
+  const response = await fetch(esgDownloadUrl(sessionId, encodeURIComponent(name)));
+  return { status: response.status, body: await response.text() };
+}
+
+export async function deleteEsgDownload(sessionId: string, name: string): Promise<number> {
+  const response = await fetch(esgDownloadUrl(sessionId, encodeURIComponent(name)), { method: 'DELETE' });
+  return response.status;
+}
+
+// A Blob URL triggers a download across chromium, firefox, and webkit; a data URL does not.
+export async function downloadInPage(page: Page, text: string, filename: string): Promise<Download> {
+  const [download] = await Promise.all([
+    page.waitForEvent('download'),
+    page.evaluate(
+      ({ text, filename }) => {
+        const anchor = document.createElement('a');
+        anchor.href = URL.createObjectURL(new Blob([text], { type: 'text/plain' }));
+        anchor.download = filename;
+        document.body.appendChild(anchor);
+        anchor.click();
+      },
+      { text, filename },
+    ),
+  ]);
+  return download;
 }
 
 export async function runPlaywrightFlow(engineName: string, sessionId: string): Promise<void> {
