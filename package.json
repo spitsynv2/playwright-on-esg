@@ -6,9 +6,12 @@
   "license": "Apache-2.0",
   "scripts": {
     "test": "playwright test",
-    "test:refresh:parallel": "playwright test playwright-on-esg-parallel-refresh.spec.ts",
-    "test:fileserver-clipboard": "playwright test playwright-on-esg-fileserver-clipboard.spec.ts",
+    "test:default": "playwright test --project=esg",
+    "test:refresh": "playwright test --project=refresh",
+    "test:refresh:parallel": "playwright test --workers=8 playwright-on-esg-parallel-refresh.spec.ts",
+    "test:fileserver-clipboard": "playwright test fileserver-clipboard",
     "test:refresh-isolation": "playwright test playwright-on-esg-refresh-isolation.spec.ts",
+    "test:device": "playwright test playwright-on-esg-device.spec.ts",
     "typecheck": "tsc --noEmit"
   },
   "devDependencies": {
@@ -17,7 +20,7 @@
     "typescript": "^5.9.2"
   },
   "dependencies": {
-    "@zebrunner/javascript-agent-playwright": "github:spitsynv2/javascript-agent-playwright#b23cfa55d3d23b5745aabf4f16062529de279729",
+    "@zebrunner/javascript-agent-playwright": "github:spitsynv2/javascript-agent-playwright#e9ad6ae6480ca196003c5bff796310b288826593",
     "dotenv": "^17.4.2"
   }
 }

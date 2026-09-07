@@ -1,33 +1,14 @@
-import { test } from '@playwright/test';
+import { test } from '@zebrunner/javascript-agent-playwright/remote';
 
-import {
-  browserName,
-  createEsgSession,
-  createTimeoutMs,
-  deleteEsgSession,
-  requireEsgCredentials,
-  runPlaywrightFlow,
-} from '../src/playwright-esg';
+import { runPlaywrightScenario } from '../src/scenario';
 
-async function openNavigateClose() {
-  const sessionId = await createEsgSession();
-  try {
-    await runPlaywrightFlow(browserName, sessionId);
-  } finally {
-    await deleteEsgSession(sessionId);
-  }
-}
-
+// Default mode: the fixture creates one ESG session per test and deletes it at the end.
 test.describe('Playwright on ESG', () => {
-  test('creates a session, navigates Playwright, then deletes it', async () => {
-    test.setTimeout(createTimeoutMs + 120_000);
-    requireEsgCredentials();
-    await openNavigateClose();
+  test('creates a session, navigates Playwright, then deletes it', async ({ page }) => {
+    await runPlaywrightScenario(page);
   });
 
-  test('opens a second independent session and navigates again', async () => {
-    test.setTimeout(createTimeoutMs + 120_000);
-    requireEsgCredentials();
-    await openNavigateClose();
+  test('opens a second independent session and navigates again', async ({ page }) => {
+    await runPlaywrightScenario(page);
   });
 });

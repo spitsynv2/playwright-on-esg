@@ -1,28 +1,55 @@
 # Playwright on ESG — Testing Guide
 
-This guide explains how the tests work, how to write new tests, how to use the ESG
-endpoints (WebSocket, refresh, download, clipboard), and the full configuration reference.
-For install and a quick start, read the [README](../README.md).
+This guide explains how the tests work, how to write new tests, how to use the `remoteSession`
+endpoints, and the full configuration reference. For install and a quick start, read the
+[README](../README.md).
+
+The tests import `test` from `@zebrunner/javascript-agent-playwright/remote`. The remote fixture
+owns the ESG session. The tests use the standard `page` and `context` fixtures, and use
+`remoteSession` for the remote-only endpoints.
 
 ## How it works
 
-### Session model
+### The fixture
 
-ESG starts one ECS task for each session. The task runs three containers: browser,
-recorder, and uploader.
+The remote fixture does four things:
+
+- It selects local or remote from the environment. See `useRemoteBrowser`.
+- It creates the ESG session, connects Playwright over the WebSocket, and deletes the session.
+- It refreshes the browser between tests when refresh mode is on. See `useSessionRefresh`.
+- It exposes `page`, `context`, `remoteBrowser`, and `remoteSession` to the tests.
+
+A test uses `page` and `context` for normal browser work. A test uses `remoteSession` for the
+control-plane endpoints (clipboard and downloads) and for the session identifiers.
+
+### Session model
 
 One session has four steps:
 
-1. The test sends `POST /session` with the capabilities. The create request needs basic authentication.
+1. The fixture sends `POST /session` with the capabilities. The create request needs basic authentication.
 2. ESG returns a top-level `sessionId`, for example `{"sessionId": "<uuid>"}`.
 3. Playwright connects to `wss://<host>/ws/playwright/<sessionId>`.
-4. The test sends `DELETE /session/<sessionId>` to stop the task.
+4. The fixture sends `DELETE /session/<originalSessionId>` to end the session.
+
+### Session modes
+
+The project selects the mode. See the `esg` and `refresh` projects in the "Projects and engines"
+section. `remoteOptions.refresh` on a project turns refresh on. `REMOTE_REFRESH=true` forces
+refresh for any run.
+
+- Per-test (the `esg` project) — The fixture creates one session for each test and deletes it at
+  the end.
+- Refresh (the `refresh` project) — The fixture creates one session for each worker. The fixture
+  refreshes the browser between tests, and deletes the session when the worker stops.
+
+A refresh needs a shared session across tests, so refresh scenarios use `test.describe.serial`.
+A serial group runs on one worker, so the tests in the group share the session.
 
 ### Refresh model
 
-The refresh request replaces the browser inside the same task. The task and its artifacts
-stay. `POST /playwright/<sessionId>/refresh` has no authentication middleware; the session ID
-is the credential.
+The refresh request replaces the browser inside the same session. The session and its artifacts stay.
+`POST /playwright/<sessionId>/refresh` has no authentication middleware. The session ID is the
+credential.
 
 The response has this form:
 
@@ -37,40 +64,59 @@ The response has this form:
 }
 ```
 
-- `sessionId` — The ID of the new browser. Use this ID for the WebSocket reconnect.
-- `originalSessionId` — The root session that owns the ECS task.
-- `generation` — The count of browsers that the task started.
+- `sessionId` — The ID of the new browser. The fixture uses this ID for the WebSocket reconnect.
+- `originalSessionId` — The root session ID.
+- `generation` — The count of browsers the session started.
 
-After the refresh, reconnect Playwright to `wss://<host>/ws/playwright/<new-id>`.
+After the refresh, the fixture reconnects Playwright to `wss://<host>/ws/playwright/<new-id>`.
 
 ### Original ID and child ID
 
 A refresh creates a child session ID. The original ID and every child ID resolve to the same
-task. This behavior gives two options:
+session. This behavior gives two options:
 
-- Send the next refresh with the original ID or with the latest child ID. Both reach the same task.
-- Send the delete with the original ID or with any child ID. A delete stops the complete session.
+- The next refresh accepts the original ID or the latest child ID. Both reach the same session.
+- The delete accepts the original ID or any child ID. A delete stops the complete session.
 
-The tests keep `originalSessionId` and use it for the delete. The latest child ID also works.
+The fixture keeps `originalSessionId` and uses it for the delete.
 
 After a delete, each ID of that session returns `409 session stopped` for 10 minutes. After
 10 minutes, each ID returns `404 invalid session id`.
 
+## The remoteSession API
+
+`remoteSession` is a `RemoteSession`. It is remote-only, so it throws during a local run. Use it
+for the identifiers and the control-plane endpoints.
+
+Identifiers:
+
+- `remoteSession.sessionId` — The current browser ID.
+- `remoteSession.originalSessionId` — The root session ID.
+- `remoteSession.generation` — The browser generation count. It increases after each refresh.
+- `remoteSession.browserName` — The engine of the current browser.
+
+Endpoints:
+
+- `remoteSession.setClipboard(text)` / `remoteSession.getClipboard()`
+- `remoteSession.listDownloads()` / `remoteSession.fetchDownload(name)` / `remoteSession.deleteDownload(name)`
+- `remoteSession.downloadUrl(name?)` — The URL of the download endpoint.
+
+The `page`, `context`, and `remoteBrowser` fixtures are the standard Playwright objects on the
+remote browser. Use `remoteBrowser.newContext(...)` for device emulation or a clean context.
+
 ## Endpoints
 
-All endpoints below are relative to `ESG_HOST`. The WebSocket endpoints use the `ws`/`wss`
-scheme. The session-scoped endpoints need only the session ID, not basic authentication.
+All endpoints below are relative to the remote host. The session-scoped endpoints need only the
+session ID, not basic authentication. The fixture wraps these endpoints, so a test calls the
+`remoteSession` methods and does not call the endpoints directly.
 
 ### WebSocket connect
-
-Connect a Playwright client to the remote browser server:
 
 ```
 wss://<host>/ws/playwright/<sessionId>
 ```
 
-The helper `runPlaywrightFlow` connects, sets the viewport per engine, runs a scenario, and
-closes the browser.
+The fixture connects Playwright to this URL and reconnects to the new ID after a refresh.
 
 ### Refresh
 
@@ -81,13 +127,11 @@ Content-Type: application/json
 { "browserName": "chromium" }
 ```
 
-Use the helper `refreshEsgSession(sessionId, browserName)`. It validates the response and
-returns the new session data.
+The fixture sends the refresh in refresh mode and validates the response.
 
 ### Download (fileserver)
 
-The browser image runs a small file server that serves the browser download directory
-(`$HOME/Downloads`). ESG proxies it under the session:
+The remote session serves the browser download directory under the session:
 
 - List file names (newest first):
 
@@ -109,13 +153,8 @@ The browser image runs a small file server that serves the browser download dire
   DELETE /download/<sessionId>/<name>
   ```
 
-Helpers in `src/playwright-esg.ts`:
-
-- `downloadInPage(page, text, filename)` — Triggers a download in the page with a Blob URL.
-  A Blob URL works on Chromium, Firefox, and WebKit; a data URL does not.
-- `listEsgDownloads(sessionId)` — Returns the file name array.
-- `fetchEsgDownload(sessionId, name)` — Returns `{ status, body }`.
-- `deleteEsgDownload(sessionId, name)` — Deletes one file and returns the status.
+`remoteSession.listDownloads()`, `remoteSession.fetchDownload(name)`, and
+`remoteSession.deleteDownload(name)` wrap these routes.
 
 Rules:
 
@@ -128,22 +167,23 @@ Rules:
 Example:
 
 ```ts
-const download = await downloadInPage(page, 'hello', 'hello.txt');
+const download = await downloadInPage(page, downloadText, downloadFilename);
 expect(await download.failure()).toBeNull();
 
-const names = await listEsgDownloads(sessionId);
-const file = await fetchEsgDownload(sessionId, names[0]);
-expect(file.body).toContain('hello');
+const names = await remoteSession.listDownloads();
+const response = await remoteSession.fetchDownload(names[0]);
+const body = await response.text();
+expect(body).toContain(downloadText);
 
 // Optional: attach the file to the Zebrunner report.
-currentTest.attachArtifact(Buffer.from(file.body, 'utf8'), download.suggestedFilename());
+await test.info().attach(download.suggestedFilename(), { body: Buffer.from(body, 'utf8') });
 
-await deleteEsgDownload(sessionId, names[0]);
+await remoteSession.deleteDownload(names[0]);
 ```
 
 ### Clipboard
 
-The browser image runs a clipboard service on the X display. ESG proxies it under the session:
+The remote session exposes a clipboard service under the session:
 
 - Set the clipboard:
 
@@ -160,10 +200,10 @@ The browser image runs a clipboard service on the X display. ESG proxies it unde
   GET /clipboard/<sessionId>
   ```
 
-Helpers: `setEsgClipboard(sessionId, text)` and `getEsgClipboard(sessionId)`.
+`remoteSession.setClipboard(text)` and `remoteSession.getClipboard()` wrap these routes.
 
 The clipboard service starts after the X server is ready, so retry the round-trip for a fresh
-session (the tests use `expect(...).toPass(...)`).
+session. The tests use `expect(...).toPass(...)`.
 
 ## Configuration reference
 
@@ -172,60 +212,70 @@ through `dotenv`. Copy `.env.example` to `.env` to start.
 
 ### Connection
 
-- `ESG_HOST`, `ESG_USER`, `ESG_PASSWORD` — The host and the credentials.
-- `ZEBRUNNER_HUB_URL` — The host with the credentials in the URL. The Zebrunner launcher uses this.
+- `REMOTE_HOST` — The host with the credentials in the URL, for example
+  `https://user:password@engine.zebrunner.dev`.
+- `ZEBRUNNER_HUB_URL` — The host with the credentials in the URL. A Zebrunner launch sets this
+  value. It wins when both hosts are set.
+- `ZEBRUNNER_CAPABILITIES` — The launch capabilities as JSON. A Zebrunner launch sets this value.
+  The fixture merges these capabilities into the create request.
+- `REMOTE` — Forces the choice. `REMOTE=true` is remote. `REMOTE=false` is local. When `REMOTE`
+  is not set, the fixture runs remote if `REMOTE_HOST` or `ZEBRUNNER_HUB_URL` is set.
 
-`ESG_HOST` has no default. An absent host or credential fails the test early with a clear message.
+An absent host or credential fails the test early with a clear message.
+
+### Session mode
+
+- `REMOTE_REFRESH` — A boolean. `true` selects refresh mode. Default: `false`.
 
 ### Browser
 
-- `ESG_PLAYWRIGHT_BROWSER_NAME` — The engine. Values: `chromium`, `chrome`, `edge`, `firefox`,
-  `webkit`, or `safari`. Default: `chromium`.
-- `ESG_PLAYWRIGHT_VERSION` — The Playwright image tag, for example `1.58.2`. Default: the
+- `REMOTE_PLAYWRIGHT_BROWSER_NAME` — The default engine. Values: `chromium`, `chrome`, `edge`,
+  `firefox`, `webkit`, or `safari`. Default: `chromium`. The device projects set the engine per
+  test with capabilities, so this value does not apply to the device spec.
+- `REMOTE_PLAYWRIGHT_HEADLESS` — A boolean. Default: `false`. The config runs headed by default.
+- `REMOTE_PLAYWRIGHT_VERSION` — The Playwright version, for example `1.58.2`. Default: the
   installed `@playwright/test` version.
-- `ESG_PLAYWRIGHT_HEADLESS` — A boolean. Default: `false`.
-- `ESG_PLAYWRIGHT_REFRESH_BROWSER_NAME` — The engine after the refresh. Default: the value of
-  `ESG_PLAYWRIGHT_BROWSER_NAME`.
 
-### Download tests (data-driven)
+### Download tests
 
-- `ESG_PLAYWRIGHT_BROWSERS` — A comma-separated engine list for the data-driven tests. Default:
-  the value of `ESG_PLAYWRIGHT_BROWSER_NAME`.
-- `ESG_DOWNLOAD_TEXT` — The download payload. Default: a fixed string.
-- `ESG_DOWNLOAD_FILENAME` — The suggested file name. Default: `hello.txt`.
+- `DOWNLOAD_TEXT` — The download payload. Default: a fixed string.
+- `DOWNLOAD_FILENAME` — The suggested file name. Default: `hello.txt`.
+- `STEP_PAUSE_MS` — A pause after each navigation in the scenario. Default: `0`.
 
 ### Zebrunner session capabilities
 
 The project sends these values in `zebrunner:options`.
 
-- `ESG_BROWSER_CPU` — Task CPU units. Playwright uses a minimum of 1024.
-- `ESG_BROWSER_MEMORY` — Task memory in MB. Playwright uses a minimum of 2048.
-- `ESG_ENABLE_VIDEO` — Video record. Default: `true`.
-- `ESG_ENABLE_VNC` — Live VNC. Default: `true`.
-- `ESG_ENABLE_LOG` — Default: `true`.
-- `ESG_ENABLE_DEBUG` — Default: `false`. A `true` value adds debug text to an error message.
-- `ESG_IDLE_TIMEOUT` — Seconds. Default: `300`. ESG reduces a larger value to the cluster maximum.
-- `ESG_MAX_TIMEOUT` — Seconds. The hard limit on session life.
-- `ESG_SCREEN_RESOLUTION` — Format `WxHxD`. Default: `1920x1080x24`.
-- `ESG_VIDEO_SCREEN_SIZE` — Default: the screen resolution.
-- `ESG_FRAME_RATE` — Default: `12`.
-- `ESG_TIME_ZONE` — An IANA name, for example `Europe/Kyiv`.
+- `REMOTE_BROWSER_CPU` — Session CPU units. Playwright uses a minimum of 1024.
+- `REMOTE_BROWSER_MEMORY` — Session memory in MB. Playwright uses a minimum of 2048.
+- `REMOTE_BROWSER_ENABLE_VIDEO` — Video record. Default: `true`.
+- `REMOTE_BROWSER_ENABLE_VNC` — Live VNC. Default: `true`.
+- `REMOTE_BROWSER_ENABLE_LOG` — Default: `true`.
+- `REMOTE_BROWSER_ENABLE_DEBUG` — Default: `false`.
+- `REMOTE_IDLE_TIMEOUT` — Seconds. Default: `300`. A larger value is reduced to the platform maximum.
+- `REMOTE_MAX_TIMEOUT` — Seconds. The hard limit on session life.
+- `REMOTE_BROWSER_SCREEN_RESOLUTION` — Format `WxHxD`. Default: `1920x1080x24`.
+- `REMOTE_BROWSER_VIDEO_SCREEN_SIZE` — Default: the screen resolution.
+- `REMOTE_BROWSER_FRAME_RATE` — Default: `12`.
+- `REMOTE_BROWSER_TIME_ZONE` — An IANA name, for example `Europe/Kyiv`.
 
-The code sends a default for the first six values. The code sends the other values only when set.
+### Timeouts
 
-### Runner and timeouts
+- `TEST_TIMEOUT_MS` — The Playwright test timeout. Default: `120000`.
+- `REMOTE_SESSION_CREATE_TIMEOUT_MS` — The timeout for the create request. Default: `600000`.
+- `REMOTE_PLAYWRIGHT_CONNECT_TIMEOUT_MS` — The timeout for the WebSocket connect. Default: `120000`.
+- `REMOTE_PLAYWRIGHT_REFRESH_TIMEOUT_MS` — The timeout for the refresh request. Default: `150000`.
+- `REMOTE_SESSION_DELETE_TIMEOUT_MS` — The timeout for the delete request. Default: `30000`.
 
-- `ESG_WORKERS` — The parallel worker count. Default: `1`.
-- `ESG_RETRIES` — The retry count. Default: `0`.
-- `ESG_TEST_TIMEOUT_MS` — The Playwright test timeout. Default: `120000`.
-- `ESG_SESSION_CREATE_TIMEOUT_MS` — The timeout for the create request. Default: `600000`.
-- `ESG_PLAYWRIGHT_REFRESH_TIMEOUT_MS` — The timeout for the refresh request. Default: `150000`.
-- `ESG_STEP_PAUSE_MS` — A pause after each navigation. Default: `5000`.
+### Runner
+
+- `WORKERS` — The parallel worker count. Default: `1`.
+- `RETRIES` — The retry count. Default: `0`.
 
 ### Zebrunner reporting (optional)
 
-The `@zebrunner/javascript-agent-playwright` reporter sends results to Zebrunner. The reporter
-is active only when `REPORTING_ENABLED` is `true` and both server values exist.
+The `@zebrunner/javascript-agent-playwright` reporter sends results to Zebrunner. The reporter is
+active only when `REPORTING_ENABLED` is `true` and both server values exist.
 
 - `REPORTING_ENABLED` — `true` or `false`.
 - `REPORTING_SERVER_HOSTNAME` — The Zebrunner host.
@@ -234,61 +284,49 @@ is active only when `REPORTING_ENABLED` is `true` and both server values exist.
 - `REPORTING_LAUNCH_DISPLAY_NAME`, `REPORTING_LAUNCH_BUILD`, and `REPORTING_LAUNCH_ENVIRONMENT`
   — The launch metadata.
 
-## Window size and viewport
+## Projects and engines
 
-`viewportFor` in `src/playwright-esg.ts` chooses the page viewport per engine. The size comes
-from `ESG_SCREEN_RESOLUTION`. For example, `1920x1080x24` gives a `1920x1080` viewport.
+`playwright.config.ts` defines four projects:
 
-- Headless, any engine — The code sets the viewport to the screen size.
-- Headed Chromium, Chrome, or Edge — The code sets the viewport to `null`. The image sizes the
-  window with a launch argument. A client viewport would add browser chrome and clip the top.
-- Headed Firefox, WebKit, or Safari — The code sets the viewport to the screen size. These
-  engines get no window-size launch argument.
+- `esg` — The default spec and the fileserver-clipboard spec, in per-test mode. The engine comes
+  from `REMOTE_PLAYWRIGHT_BROWSER_NAME`.
+- `refresh` — The refresh, parallel-refresh, refresh-isolation, and fileserver-clipboard-refresh
+  specs. It sets `remoteOptions.refresh` to `true`, so the fixture runs refresh mode without an
+  env var. The engine comes from `REMOTE_PLAYWRIGHT_BROWSER_NAME`.
+- `device-webkit` — The device spec, filtered to the iPhone test with `grep`. It pins the session
+  engine to `webkit` with `remoteOptions.capabilities.browserName`.
+- `device-chromium` — The device spec, filtered to the Android test with `grep`. It pins the
+  session engine to `chromium`.
+
+Each spec belongs to one project, so a bare file path runs under the correct project:
+
+```bash
+# Runs under the refresh project, so refresh mode is on
+npx playwright test playwright-on-esg-refresh.spec.ts
+```
+
+The two device projects let both device tests run in one command, each on the correct engine:
+
+```bash
+npx playwright test playwright-on-esg-device.spec.ts
+```
 
 ## Device emulation
 
 The device tests emulate a phone with a Playwright device descriptor from `devices`.
 
 - The ESG session engine must match the descriptor engine. An iPhone descriptor needs WebKit.
-  A Pixel descriptor needs Chromium. The test reads `device.defaultBrowserType`.
+  A Pixel descriptor needs Chromium. The device projects pin the engine per test.
 - Device emulation needs the mobile flag. Only Chromium and WebKit support it, so the device
   tests do not use Firefox.
-- WebKit on Linux reports `navigator.maxTouchPoints` as `0`, even with touch emulation. The
-  test asserts touch with a combined signal, not `maxTouchPoints`.
-- The test applies the descriptor with `browser.newContext({ ...device })`. Do not set a
+- WebKit on Linux reports `navigator.maxTouchPoints` as `0`, even with touch emulation. The test
+  asserts touch with a combined signal, not `maxTouchPoints`.
+- The test applies the descriptor with `remoteBrowser.newContext({ ...device })`. Do not set a
   separate viewport for the device flow.
-
-## Timeout model
-
-Two different timeouts act on the tests.
-
-- `ESG_TEST_TIMEOUT_MS` is the Playwright timeout. It bounds each test and each hook.
-- `ESG_SESSION_CREATE_TIMEOUT_MS` is the `fetch` abort timeout on the create request. It bounds
-  the HTTP call only.
-
-A slow ESG cold start needs more than the Playwright default, so the code raises the timeout
-where the session opens. Each test calls `test.setTimeout(...)` in its body. The refresh
-`beforeAll` calls `test.setTimeout(...)` for the hook. `test.setTimeout` acts only on its own scope.
-
-## Test files
-
-- `tests/playwright-on-esg.spec.ts` — The standard path. Two independent tests each open a
-  session, navigate the Playwright site, then delete the session.
-- `tests/playwright-on-esg-device.spec.ts` — Phone emulation. One test for an iPhone on WebKit
-  and one for an Android phone on Chromium.
-- `tests/playwright-on-esg-refresh.spec.ts` — One shared session across two serial tests. The
-  first runs the flow; the second refreshes, then runs the flow on the new browser.
-- `tests/playwright-on-esg-parallel-refresh.spec.ts` — Two serial groups that run the refresh
-  flow in parallel. Run with `npm run test:refresh:parallel`.
-- `tests/playwright-on-esg-fileserver-clipboard.spec.ts` — The download endpoint, the clipboard
-  endpoint, and both after a refresh. Run with `npm run test:fileserver-clipboard`.
-- `tests/playwright-on-esg-refresh-isolation.spec.ts` — Data-driven over `ESG_PLAYWRIGHT_BROWSERS`.
-  It proves the refresh clears the download path and returns a clean, isolated browser (no
-  leftover contexts, cookies, or `localStorage`). Run with `npm run test:refresh-isolation`.
 
 ## Parallelism and the refresh
 
-A refresh needs a shared session across two tests. This changes how you run the tests.
+A refresh needs a shared session across tests, so refresh scenarios use `test.describe.serial`.
 
 Playwright gives work to a worker in units:
 
@@ -301,48 +339,64 @@ The worker count acts by this formula:
 workers used = min(workers, number of independent units)
 ```
 
-- To run refresh scenarios in parallel, add one serial group for each parallel session, then
-  set `ESG_WORKERS` to the group count.
-- Each busy worker holds one live ESG task. Keep the worker count inside your grid concurrency
+- To run refresh scenarios in parallel, add one serial group for each parallel session, then set
+  `WORKERS` to the group count.
+- Each busy worker holds one live remote session. Keep the worker count inside your grid concurrency
   limit and account quota.
+
+## Test files
+
+- `tests/playwright-on-esg.spec.ts` — The standard path. One test opens a session, runs the
+  scenario, then deletes the session.
+- `tests/playwright-on-esg-device.spec.ts` — Phone emulation. One test for an iPhone on WebKit
+  and one test for an Android phone on Chromium. The device projects run both.
+- `tests/playwright-on-esg-refresh.spec.ts` — One shared session across two serial tests. The
+  first runs the scenario. The second refreshes, then runs the scenario on the new browser. It
+  runs under the `refresh` project.
+- `tests/playwright-on-esg-parallel-refresh.spec.ts` — Eight serial groups that run the refresh
+  scenario in parallel. Run with `npm run test:refresh:parallel`.
+- `tests/playwright-on-esg-fileserver-clipboard.spec.ts` — The download endpoint and the
+  clipboard endpoint, in per-test mode.
+- `tests/playwright-on-esg-fileserver-clipboard-refresh.spec.ts` — The same two endpoints across
+  a refresh, in refresh mode. `npm run test:fileserver-clipboard` runs both files.
+- `tests/playwright-on-esg-refresh-isolation.spec.ts` — The isolation check. It proves the
+  refresh clears the download path and returns a clean, isolated browser with no leftover
+  contexts, cookies, or `localStorage`. Run with `npm run test:refresh-isolation`.
 
 ## Shared code
 
-`src/playwright-esg.ts` holds the shared helpers.
+`src/scenario.ts` holds the shared helpers.
 
-- `createEsgSession` — Sends the create request, validates the response, returns the session ID.
-- `refreshEsgSession` — Sends the refresh request, validates the response, returns the new data.
-- `deleteEsgSession` — Sends the delete request and logs the status with `currentTest.log.info`.
-- `engineFor` — Maps an engine name to the Playwright `BrowserType`.
-- `viewportFor` — Returns the per-engine viewport for the page.
-- `runPlaywrightFlow` / `runPlaywrightScenario` — Connect, set the viewport, run the scenario.
-- `requireEsgCredentials` — Fails early when a credential is absent.
-- `setEsgClipboard` / `getEsgClipboard` — The clipboard endpoint.
-- `downloadInPage`, `listEsgDownloads`, `fetchEsgDownload`, `deleteEsgDownload` — The download endpoint.
-- `browsersUnderTest`, `downloadText`, `downloadFilename` — The data for the data-driven tests.
+- `runPlaywrightScenario(page)` — Navigates the Playwright site and runs a short scenario.
+- `downloadInPage(page, text, filename)` — Triggers a download in the page with a Blob URL. A
+  Blob URL works on Chromium, Firefox, and WebKit. A data URL does not.
+- `downloadText` and `downloadFilename` — The download payload data, from the environment.
+
+`src/fileserver.ts` holds the fileserver and clipboard assertions.
+
+- `verifyDownload(page, remoteSession)` — Downloads a file, fetches it through the fileserver,
+  attaches it to the report, then deletes it.
+- `verifyClipboard(remoteSession, text)` — Sets and reads the clipboard, and retries the round-trip.
 
 ## Troubleshooting
 
 - `returned non-JSON` — ESG returned an HTML page. The common cause is a wrong credential. Check
-  `ESG_USER` and `ESG_PASSWORD`, or `ZEBRUNNER_HUB_URL`.
+  the user and password in `REMOTE_HOST` or `ZEBRUNNER_HUB_URL`.
 - `failed (<status>)` with an ESG message — ESG returned `{"value": {"error": "...", "message": "..."}}`.
   Read the ESG text for the cause.
-- The browser does not start after a refresh — The refresh needs a disconnect first. Close the
-  browser before the refresh.
-- `"beforeAll" hook timeout ... exceeded` — The ESG cold start took more than the hook timeout.
-  Raise `ESG_TEST_TIMEOUT_MS`.
-- A version warning on connect — The client and the image run different Playwright versions.
-  Match the versions and start a new session.
+- `Missing remote credentials` — The host URL has no user or password. Put the credentials in the URL.
+- `The remote browser is not connected` — The test used `remoteSession.browser` before the
+  connect, or after a failure. Check the session state.
+- A version warning on connect — The client and the remote browser run different Playwright
+  versions. Match the versions and start a new session.
 - `maxTouchPoints` is 0 on WebKit — This is normal on WebKit on Linux. Do not assert it.
-- Firefox shows "The security sandbox is disabled" — This is expected. The image disables the
-  Firefox content sandbox to run in the container, like `--no-sandbox` for Chromium.
+- Firefox shows "The security sandbox is disabled" — This is expected on the remote browser.
 
 ## Playwright version match
 
-The client and the ESG image must run the same Playwright version. The client is the
-`@playwright/test` package. The image version is `PLAYWRIGHT_VERSION` in
-`browser-images/playwright/Dockerfile`.
+The client and the remote browser must run the same Playwright version. The client is the
+`@playwright/test` package.
 
 - Keep the same `major.minor` at a minimum, and the same exact version when you can.
 - Pin exact versions on both sides.
-- After a version bump, rebuild and push the image, then start a new session.
+- After a version bump, use a matching remote browser version, then start a new session.

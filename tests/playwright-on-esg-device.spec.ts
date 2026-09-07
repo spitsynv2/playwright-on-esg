@@ -1,72 +1,49 @@
-import { devices, expect, test } from '@playwright/test';
-import { currentTest } from '@zebrunner/javascript-agent-playwright';
+import { expect, test } from '@zebrunner/javascript-agent-playwright/remote';
+import { devices, type Browser } from '@playwright/test';
 
-import {
-  createEsgSession,
-  createTimeoutMs,
-  deleteEsgSession,
-  engineFor,
-  esgWsHost,
-  reportingCapabilities,
-  requireEsgCredentials,
-} from '../src/playwright-esg';
-
-// iPhone descriptors default to WebKit and Pixel descriptors to Chromium, so the ESG session
-// engine must match the descriptor. A mismatch connects the wrong browser to the descriptor.
-async function runDeviceEmulation(deviceName: string): Promise<void> {
+// iPhone descriptors default to WebKit and Pixel descriptors to Chromium. The device-webkit and
+// device-chromium projects pin the session engine with capabilities and grep to the matching test.
+// The skip guards a direct run where the session engine does not match the descriptor.
+async function runDeviceEmulation(remoteBrowser: Browser, deviceName: string): Promise<void> {
   const device = devices[deviceName];
   expect(device, `Unknown Playwright device: ${deviceName}`).toBeTruthy();
+  test.skip(
+    remoteBrowser.browserType().name() !== device.defaultBrowserType,
+    `${deviceName} needs a ${device.defaultBrowserType} session; run the device-${device.defaultBrowserType} project`,
+  );
 
-  const sessionId = await createEsgSession(device.defaultBrowserType);
+  const context = await remoteBrowser.newContext({ ...device });
+  const page = await context.newPage();
   try {
-    const browser = await engineFor(device.defaultBrowserType).connect(`${esgWsHost}/ws/playwright/${sessionId}`);
-    try {
-      const caps = reportingCapabilities(browser.browserType().name(), browser.version());
-      currentTest.attachSessionCapabilities(caps, sessionId);
-      currentTest.log.info(`Session ${sessionId} emulates ${deviceName} on ${caps.browserName}.`);
+    await page.goto('https://playwright.dev/', { waitUntil: 'commit' });
+    await expect(page).toHaveTitle(/Playwright/);
 
-      const context = await browser.newContext({ ...device });
-      const page = await context.newPage();
-      try {
-        await page.goto('https://playwright.dev/', { waitUntil: 'commit' });
-        await expect(page).toHaveTitle(/Playwright/);
+    // WebKit on Linux reports maxTouchPoints 0 even with touch emulation, so combine signals.
+    const emulated = await page.evaluate(() => ({
+      width: window.innerWidth,
+      dpr: window.devicePixelRatio,
+      hasTouch:
+        'ontouchstart' in window ||
+        navigator.maxTouchPoints > 0 ||
+        window.matchMedia('(any-pointer: coarse)').matches,
+      userAgent: navigator.userAgent,
+    }));
 
-        // WebKit on Linux reports maxTouchPoints 0 even with touch emulation, so combine signals.
-        const emulated = await page.evaluate(() => ({
-          width: window.innerWidth,
-          dpr: window.devicePixelRatio,
-          hasTouch:
-            'ontouchstart' in window ||
-            navigator.maxTouchPoints > 0 ||
-            window.matchMedia('(any-pointer: coarse)').matches,
-          userAgent: navigator.userAgent,
-        }));
-
-        expect(emulated.width).toBe(device.viewport.width);
-        expect(emulated.dpr).toBeCloseTo(device.deviceScaleFactor);
-        expect(emulated.userAgent).toBe(device.userAgent);
-        expect(emulated.hasTouch).toBe(true);
-      } finally {
-        await context.close();
-      }
-    } finally {
-      await browser.close();
-    }
+    expect(emulated.width).toBe(device.viewport.width);
+    expect(emulated.dpr).toBeCloseTo(device.deviceScaleFactor);
+    expect(emulated.userAgent).toBe(device.userAgent);
+    expect(emulated.hasTouch).toBe(true);
   } finally {
-    await deleteEsgSession(sessionId);
+    await context.close();
   }
 }
 
 test.describe('Playwright device emulation on ESG', () => {
-  test('emulates an iPhone on WebKit', async () => {
-    test.setTimeout(createTimeoutMs + 120_000);
-    requireEsgCredentials();
-    await runDeviceEmulation('iPhone 13');
+  test('emulates an iPhone on WebKit', async ({ remoteBrowser }) => {
+    await runDeviceEmulation(remoteBrowser, 'iPhone 13');
   });
 
-  test('emulates an Android phone on Chromium', async () => {
-    test.setTimeout(createTimeoutMs + 120_000);
-    requireEsgCredentials();
-    await runDeviceEmulation('Pixel 5');
+  test('emulates an Android phone on Chromium', async ({ remoteBrowser }) => {
+    await runDeviceEmulation(remoteBrowser, 'Pixel 5');
   });
 });

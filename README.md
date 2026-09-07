@@ -1,11 +1,20 @@
 # Playwright on ESG
 
-This project runs Playwright tests against ESG, the Zebrunner Elastic Selenium Grid. Each test
-starts a remote browser on ESG and connects to it over the native Playwright WebSocket. The
-tests do not start a local browser; `connect()` attaches to the remote browser server.
+This project runs Playwright tests on ESG, the Zebrunner Elastic Selenium Grid. The tests import
+`test` from the Zebrunner remote fixture, so the standard `page` fixture runs on a remote ESG
+browser. The fixture owns the session lifecycle: create, connect, refresh, and delete. The tests
+do not manage sessions.
 
-For the full detail — endpoints, configuration reference, test files, parallelism, and
-troubleshooting — read the [Testing Guide](docs/testing-guide.md).
+```ts
+import { test } from '@zebrunner/javascript-agent-playwright/remote';
+
+test('runs on ESG', async ({ page }) => {
+  await page.goto('https://playwright.dev/');
+});
+```
+
+For the architecture, the endpoints, and the full configuration reference, read the
+[testing guide](docs/testing-guide.md).
 
 ## Requirements
 
@@ -20,49 +29,56 @@ npm install
 
 ## Configure
 
-Copy the template and set the host and credentials:
+Copy the template and set the values:
 
 ```bash
 cp .env.example .env
 ```
 
-Set one of:
+The fixture selects local or remote from the environment:
 
-- `ESG_HOST`, `ESG_USER`, and `ESG_PASSWORD`, or
-- `ZEBRUNNER_HUB_URL` with the credentials in the URL.
+- `REMOTE=true` forces remote. `REMOTE=false` forces local.
+- When `REMOTE` is not set, the fixture runs remote if `REMOTE_HOST` or `ZEBRUNNER_HUB_URL` is set.
 
-An absent host or credential fails the test early with a clear message. See the
-[configuration reference](docs/testing-guide.md#configuration-reference) for every variable.
+To run on ESG from your machine, set one host with the credentials in the URL:
+
+```bash
+# .env
+REMOTE_HOST=https://user:password@engine.zebrunner.dev
+```
+
+A Zebrunner launch sets `ZEBRUNNER_HUB_URL` and `ZEBRUNNER_CAPABILITIES` for you. The
+[testing guide](docs/testing-guide.md) covers local runs and every variable.
 
 ## Run the tests
 
-| Command | Runs |
-| --- | --- |
-| `npm test` | All specs |
-| `npm run test:fileserver-clipboard` | Download endpoint, clipboard endpoint, and both after refresh |
-| `npm run test:refresh-isolation` | Clean download path and isolated browser after refresh |
-| `npm run test:refresh:parallel` | Parallel refresh sessions |
-| `npm run typecheck` | Type check only, no browser or ESG needed |
-
-Run one file:
+The session mode comes from the project. The `esg` project runs one session per test. The
+`refresh` project runs one session per worker, refreshed between tests. `npm test` runs every
+project.
 
 ```bash
-npx playwright test playwright-on-esg.spec.ts
+# Every project
+npm test
+
+# One session per test
+npm run test:default
+
+# One session per worker, refreshed between tests
+npm run test:refresh
+npm run test:refresh:parallel
+npm run test:refresh-isolation
+npm run test:fileserver-clipboard
+
+# Device emulation: both engines in one run (device-webkit and device-chromium projects)
+npm run test:device
+
+# Type check only
+npm run typecheck
 ```
 
-Run the data-driven suites across engines:
+A bare file path runs under its project, so `npx playwright test <file>` picks the correct mode.
+`REMOTE_REFRESH=true` still forces refresh for any run. The refresh isolation suite runs on one
+engine per run. Select the engine with `REMOTE_PLAYWRIGHT_BROWSER_NAME=firefox` (or `webkit`).
 
-```bash
-ESG_PLAYWRIGHT_BROWSERS=chromium,firefox,webkit npm run test:refresh-isolation
-```
-
-## Endpoints
-
-Each session exposes these ESG endpoints (all need only the session ID):
-
-- WebSocket connect — `wss://<host>/ws/playwright/<sessionId>`
-- Refresh — `POST /playwright/<sessionId>/refresh`
-- Download — `GET /download/<sessionId>/?json`, `GET|DELETE /download/<sessionId>/<name>`
-- Clipboard — `GET|POST /clipboard/<sessionId>`
-
-See [Endpoints](docs/testing-guide.md#endpoints) for usage, helpers, and examples.
+See the [testing guide](docs/testing-guide.md) for the session model, the `remoteSession`
+endpoints, device emulation, and troubleshooting.
