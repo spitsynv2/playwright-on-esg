@@ -30,16 +30,16 @@ test.describe.serial('Playwright refresh isolation', () => {
     expect(await page.evaluate((key) => localStorage.getItem(key), MARKER_KEY)).toBe(MARKER_VALUE);
   });
 
-  test('returns a clean, isolated browser after refresh', async ({ remoteBrowser, remoteSession }) => {
+  test('returns a clean, isolated browser after refresh', async ({ sessionBrowser, remoteSession }) => {
     expect(remoteSession.originalSessionId, 'refresh changed the original session').toBe(originalSessionId);
     expect(remoteSession.generation ?? 0, 'refresh did not advance the generation').toBeGreaterThan(lastGeneration);
 
     // The refreshed generation is a brand-new browser with no leftover contexts.
-    expect(remoteBrowser.contexts().length, 'refreshed browser still had contexts').toBe(0);
+    expect(sessionBrowser.contexts().length, 'refreshed browser still had contexts').toBe(0);
     // The refreshed generation reuses the downloads path, which must start empty.
     expect(await remoteSession.listDownloads(), 'downloads path was not clean after refresh').toEqual([]);
 
-    const context = await remoteBrowser.newContext();
+    const context = await sessionBrowser.newContext();
     try {
       const cookies = await context.cookies(ORIGIN);
       expect(cookies.some((cookie) => cookie.name === MARKER_KEY), 'seeded cookie survived refresh').toBe(false);

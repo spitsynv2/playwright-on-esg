@@ -1,5 +1,5 @@
 import { defineConfig } from '@playwright/test';
-import type { RemoteTestOptions } from '@zebrunner/javascript-agent-playwright/remote';
+import type { SessionTestOptions } from '@zebrunner/javascript-agent-playwright/remote';
 import { config as loadEnv } from 'dotenv';
 
 loadEnv({ quiet: true });
@@ -16,7 +16,7 @@ const testTimeoutMs = Number(process.env.TEST_TIMEOUT_MS || 120_000) || 120_000;
 // or a headed browser stops with "Missing X server or $DISPLAY".
 const headless = String(process.env.HEADLESS).toLowerCase() === 'true';
 
-export default defineConfig<RemoteTestOptions>({
+export default defineConfig<SessionTestOptions>({
   testDir: './tests',
   fullyParallel: true,
   workers,
@@ -30,30 +30,35 @@ export default defineConfig<RemoteTestOptions>({
     // server-side recording); a local run (REMOTE=false) records the Playwright
     // video and the agent attaches it.
     video: 'on',
-    screenshot: 'off',
+    // On by default. Playwright captures a screenshot at each test end; the agent
+    // uploads every 'image/png' attachment to Zebrunner. Works local and remote.
+    screenshot: 'on',
     trace: 'off',
   },
   projects: [
     // Per-test mode: one session per test, deleted at the end.
-    { name: 'esg', testMatch: /(playwright-on-esg|fileserver-clipboard)\.spec\.ts$/ },
+    {
+      name: 'esg',
+      testMatch: /(playwright-on-esg|fileserver-clipboard|playwright-on-esg-rerun|playwright-on-esg-screenshot)\.spec\.ts$/,
+    },
     // Refresh mode: one session per worker, refreshed between tests.
     {
       name: 'refresh',
       testMatch: /-(refresh|parallel-refresh|refresh-isolation)\.spec\.ts$/,
-      use: { remoteOptions: { refresh: true } },
+      use: { sessionOptions: { refresh: true } },
     },
     // The device suite pins a fixed engine per test with session capabilities.
     {
       name: 'device-webkit',
       testMatch: /device\.spec\.ts$/,
       grep: /iPhone/,
-      use: { remoteOptions: { capabilities: { browserName: 'webkit' } } },
+      use: { sessionOptions: { capabilities: { browserName: 'webkit' } } },
     },
     {
       name: 'device-chromium',
       testMatch: /device\.spec\.ts$/,
       grep: /Android/,
-      use: { remoteOptions: { capabilities: { browserName: 'chromium' } } },
+      use: { sessionOptions: { capabilities: { browserName: 'chromium' } } },
     },
   ],
   reporter: [

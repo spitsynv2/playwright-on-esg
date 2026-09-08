@@ -7,16 +7,16 @@ import { devices, type Browser } from '@playwright/test';
 //
 // This builds its own context to force the device viewport (the remote session
 // viewport would otherwise override it). Local video still works: the agent's
-// remoteBrowser wrapper records + attaches it on a REMOTE=false run.
-async function runDeviceEmulation(remoteBrowser: Browser, deviceName: string): Promise<void> {
+// sessionBrowser wrapper records + attaches it on a REMOTE=false run.
+async function runDeviceEmulation(sessionBrowser: Browser, deviceName: string): Promise<void> {
   const device = devices[deviceName];
   expect(device, `Unknown Playwright device: ${deviceName}`).toBeTruthy();
   test.skip(
-    remoteBrowser.browserType().name() !== device.defaultBrowserType,
+    sessionBrowser.browserType().name() !== device.defaultBrowserType,
     `${deviceName} needs a ${device.defaultBrowserType} session; run the device-${device.defaultBrowserType} project`,
   );
 
-  const context = await remoteBrowser.newContext({ ...device });
+  const context = await sessionBrowser.newContext({ ...device });
   const page = await context.newPage();
   try {
     await page.goto('https://playwright.dev/', { waitUntil: 'commit' });
@@ -43,11 +43,11 @@ async function runDeviceEmulation(remoteBrowser: Browser, deviceName: string): P
 }
 
 test.describe('Playwright device emulation on ESG', () => {
-  test('emulates an iPhone on WebKit', async ({ remoteBrowser }) => {
-    await runDeviceEmulation(remoteBrowser, 'iPhone 13');
+  test('emulates an iPhone on WebKit', async ({ sessionBrowser }) => {
+    await runDeviceEmulation(sessionBrowser, 'iPhone 13');
   });
 
-  test('emulates an Android phone on Chromium', async ({ remoteBrowser }) => {
-    await runDeviceEmulation(remoteBrowser, 'Pixel 5');
+  test('emulates an Android phone on Chromium', async ({ sessionBrowser }) => {
+    await runDeviceEmulation(sessionBrowser, 'Pixel 5');
   });
 });
