@@ -21,7 +21,10 @@ export default defineConfig<RemoteTestOptions>({
     // Refresh and the default engine come from env (REMOTE_REFRESH, REMOTE_PLAYWRIGHT_BROWSER_NAME).
     // ESG sessions run headed so VNC and video show a real screen.
     headless: false,
-    video: 'off',
+    // On by default. A remote run ignores this (Zebrunner shows the grid's
+    // server-side recording); a local run (REMOTE=false) records the Playwright
+    // video and the agent attaches it.
+    video: 'on',
     screenshot: 'off',
     trace: 'off',
   },
