@@ -11,6 +11,11 @@ const reportingEnabled =
 const workers = Number(process.env.WORKERS || 1) || 1;
 const testTimeoutMs = Number(process.env.TEST_TIMEOUT_MS || 120_000) || 120_000;
 
+// Headed by default so the grid VNC and video show a real screen. Set
+// HEADLESS=true for a local / container run (REMOTE=false) that has no display,
+// or a headed browser stops with "Missing X server or $DISPLAY".
+const headless = String(process.env.HEADLESS).toLowerCase() === 'true';
+
 export default defineConfig<RemoteTestOptions>({
   testDir: './tests',
   fullyParallel: true,
@@ -19,8 +24,8 @@ export default defineConfig<RemoteTestOptions>({
   timeout: testTimeoutMs,
   use: {
     // Refresh and the default engine come from env (REMOTE_REFRESH, REMOTE_PLAYWRIGHT_BROWSER_NAME).
-    // ESG sessions run headed so VNC and video show a real screen.
-    headless: false,
+    // Headed on the grid (VNC + video); HEADLESS=true forces headless for a local run.
+    headless,
     // On by default. A remote run ignores this (Zebrunner shows the grid's
     // server-side recording); a local run (REMOTE=false) records the Playwright
     // video and the agent attaches it.
