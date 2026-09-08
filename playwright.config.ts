@@ -39,7 +39,7 @@ export default defineConfig<SessionTestOptions>({
     // Per-test mode: one session per test, deleted at the end.
     {
       name: 'esg',
-      testMatch: /(playwright-on-esg|fileserver-clipboard|playwright-on-esg-rerun|playwright-on-esg-screenshot)\.spec\.ts$/,
+      testMatch: /(playwright-on-esg|fileserver-clipboard|playwright-on-esg-rerun|playwright-on-esg-screenshot|playwright-on-esg-capabilities)\.spec\.ts$/,
     },
     // Refresh mode: one session per worker, refreshed between tests.
     {
