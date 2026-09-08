@@ -229,9 +229,9 @@ An absent host or credential fails the test early with a clear message.
 
 ### Browser
 
-- `REMOTE_PLAYWRIGHT_BROWSER_NAME` — The default engine. Values: `chromium`, `chrome`, `edge`,
-  `firefox`, `webkit`, or `safari`. Default: `chromium`. The device projects set the engine per
-  test with capabilities, so this value does not apply to the device spec.
+- `SESSION_BROWSER_NAME` — The default engine for a local or a remote run. Values: `chromium`,
+  `chrome`, `edge`, `firefox`, `webkit`, or `safari`. Default: `chromium`. The device projects set
+  the engine per test with capabilities, so this value does not apply to the device spec.
 - `REMOTE_PLAYWRIGHT_HEADLESS` — A boolean. Default: `false`. The config runs headed by default.
 - `REMOTE_PLAYWRIGHT_VERSION` — The Playwright version, for example `1.58.2`. Default: the
   installed `@playwright/test` version.
@@ -289,10 +289,10 @@ active only when `REPORTING_ENABLED` is `true` and both server values exist.
 `playwright.config.ts` defines four projects:
 
 - `esg` — The default spec and the fileserver-clipboard spec, in per-test mode. The engine comes
-  from `REMOTE_PLAYWRIGHT_BROWSER_NAME`.
+  from `SESSION_BROWSER_NAME`.
 - `refresh` — The refresh, parallel-refresh, refresh-isolation, and fileserver-clipboard-refresh
   specs. It sets `remoteOptions.refresh` to `true`, so the fixture runs refresh mode without an
-  env var. The engine comes from `REMOTE_PLAYWRIGHT_BROWSER_NAME`.
+  env var. The engine comes from `SESSION_BROWSER_NAME`.
 - `device-webkit` — The device spec, filtered to the iPhone test with `grep`. It pins the session
   engine to `webkit` with `remoteOptions.capabilities.browserName`.
 - `device-chromium` — The device spec, filtered to the Android test with `grep`. It pins the

@@ -23,7 +23,7 @@ export default defineConfig<SessionTestOptions>({
   retries: Number(process.env.RETRIES || 0) || 0,
   timeout: testTimeoutMs,
   use: {
-    // Refresh and the default engine come from env (REMOTE_REFRESH, REMOTE_PLAYWRIGHT_BROWSER_NAME).
+    // Refresh and the default engine come from env (REMOTE_REFRESH, SESSION_BROWSER_NAME).
     // Headed on the grid (VNC + video); HEADLESS=true forces headless for a local run.
     headless,
     // On by default. A remote run ignores this (Zebrunner shows the grid's
