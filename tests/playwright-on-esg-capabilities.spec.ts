@@ -1,8 +1,8 @@
-import { test } from '@zebrunner/javascript-agent-playwright/remote';
+import { test } from '@zebrunner/javascript-agent-playwright/session-fixture';
 import { expect } from '@playwright/test';
 
 // Context-option parity suite. It proves standard Playwright `use.*` context
-// options apply identically on a local run (REMOTE=false) and a remote grid run.
+// options apply identically on a local run (REMOTE_SESSION_ENABLED=false) and a remote grid run.
 //
 // Two paths, because `viewport` is special:
 //   1. Shared `page` fixture: the agent forwards `use.*` options to the context

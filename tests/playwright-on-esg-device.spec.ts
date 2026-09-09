@@ -1,4 +1,4 @@
-import { expect, test } from '@zebrunner/javascript-agent-playwright/remote';
+import { expect, test } from '@zebrunner/javascript-agent-playwright/session-fixture';
 import { devices, type Browser } from '@playwright/test';
 
 // iPhone descriptors default to WebKit and Pixel descriptors to Chromium. The device-webkit and
@@ -7,7 +7,7 @@ import { devices, type Browser } from '@playwright/test';
 //
 // This builds its own context to force the device viewport (the remote session
 // viewport would otherwise override it). Local video still works: the agent's
-// sessionBrowser wrapper records + attaches it on a REMOTE=false run.
+// sessionBrowser wrapper records + attaches it on a REMOTE_SESSION_ENABLED=false run.
 async function runDeviceEmulation(sessionBrowser: Browser, deviceName: string): Promise<void> {
   const device = devices[deviceName];
   expect(device, `Unknown Playwright device: ${deviceName}`).toBeTruthy();

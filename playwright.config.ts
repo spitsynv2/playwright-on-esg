@@ -1,5 +1,5 @@
 import { defineConfig } from '@playwright/test';
-import type { SessionTestOptions } from '@zebrunner/javascript-agent-playwright/remote';
+import type { SessionTestOptions } from '@zebrunner/javascript-agent-playwright/session-fixture';
 import { config as loadEnv } from 'dotenv';
 
 loadEnv({ quiet: true });
@@ -12,7 +12,7 @@ const workers = Number(process.env.WORKERS || 1) || 1;
 const testTimeoutMs = Number(process.env.TEST_TIMEOUT_MS || 120_000) || 120_000;
 
 // Headed by default so the grid VNC and video show a real screen. Set
-// HEADLESS=true for a local / container run (REMOTE=false) that has no display,
+// HEADLESS=true for a local / container run (REMOTE_SESSION_ENABLED=false) that has no display,
 // or a headed browser stops with "Missing X server or $DISPLAY".
 const headless = String(process.env.HEADLESS).toLowerCase() === 'true';
 
@@ -23,11 +23,11 @@ export default defineConfig<SessionTestOptions>({
   retries: Number(process.env.RETRIES || 0) || 0,
   timeout: testTimeoutMs,
   use: {
-    // Refresh and the default engine come from env (REMOTE_REFRESH, SESSION_BROWSER_NAME).
+    // Refresh and the default engine come from env (REMOTE_SESSION_REFRESH, SESSION_BROWSER_NAME).
     // Headed on the grid (VNC + video); HEADLESS=true forces headless for a local run.
     headless,
     // On by default. A remote run ignores this (Zebrunner shows the grid's
-    // server-side recording); a local run (REMOTE=false) records the Playwright
+    // server-side recording); a local run (REMOTE_SESSION_ENABLED=false) records the Playwright
     // video and the agent attaches it.
     video: 'on',
     // On by default. Playwright captures a screenshot at each test end; the agent

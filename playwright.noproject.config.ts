@@ -1,5 +1,5 @@
 import { defineConfig } from '@playwright/test';
-import type { SessionTestOptions } from '@zebrunner/javascript-agent-playwright/remote';
+import type { SessionTestOptions } from '@zebrunner/javascript-agent-playwright/session-fixture';
 import { config as loadEnv } from 'dotenv';
 
 loadEnv({ quiet: true });
@@ -19,7 +19,7 @@ const testTimeoutMs = Number(process.env.TEST_TIMEOUT_MS || 120_000) || 120_000;
 
 // Headed by default (VNC on the remote grid, like the main config). Set
 // HEADLESS=true to run headless — needed for a local / container run
-// (REMOTE=false) that has no X server, otherwise a headed browser crashes with
+// (REMOTE_SESSION_ENABLED=false) that has no X server, otherwise a headed browser crashes with
 // "Missing X server or $DISPLAY".
 const headless = String(process.env.HEADLESS).toLowerCase() === 'true';
 

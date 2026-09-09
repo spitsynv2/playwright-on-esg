@@ -1,6 +1,6 @@
 import { expect, test } from '@playwright/test';
 import type { Page } from '@playwright/test';
-import type { RemoteSession } from '@zebrunner/javascript-agent-playwright/remote';
+import type { RemoteSession } from '@zebrunner/javascript-agent-playwright/session-fixture';
 
 import { downloadFilename, downloadInPage, downloadText } from './scenario';
 

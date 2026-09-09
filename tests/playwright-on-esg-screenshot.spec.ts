@@ -1,4 +1,4 @@
-import { test } from '@zebrunner/javascript-agent-playwright/remote';
+import { test } from '@zebrunner/javascript-agent-playwright/session-fixture';
 import { expect } from '@playwright/test';
 import { currentTest } from '@zebrunner/javascript-agent-playwright';
 
@@ -10,7 +10,7 @@ import { currentTest } from '@zebrunner/javascript-agent-playwright';
 //      test captures itself, at any point. It is independent of the config path,
 //      so it works even with `use.screenshot: 'off'`.
 //
-// Both paths work on a local run (REMOTE=false) and a remote grid run.
+// Both paths work on a local run (REMOTE_SESSION_ENABLED=false) and a remote grid run.
 test.describe('Zebrunner screenshot reporting', () => {
   test('config screenshot: Playwright captures it at test end', async ({ page }) => {
     await page.goto('https://playwright.dev/', { waitUntil: 'commit' });

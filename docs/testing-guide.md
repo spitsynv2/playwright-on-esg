@@ -34,7 +34,7 @@ One session has four steps:
 ### Session modes
 
 The project selects the mode. See the `esg` and `refresh` projects in the "Projects and engines"
-section. `remoteOptions.refresh` on a project turns refresh on. `REMOTE_REFRESH=true` forces
+section. `remoteOptions.refresh` on a project turns refresh on. `REMOTE_SESSION_REFRESH=true` forces
 refresh for any run.
 
 - Per-test (the `esg` project) — The fixture creates one session for each test and deletes it at
@@ -212,28 +212,28 @@ through `dotenv`. Copy `.env.example` to `.env` to start.
 
 ### Connection
 
-- `REMOTE_HOST` — The host with the credentials in the URL, for example
+- `REMOTE_HOST_URL` — The host with the credentials in the URL, for example
   `https://user:password@engine.zebrunner.dev`.
 - `ZEBRUNNER_HUB_URL` — The host with the credentials in the URL. A Zebrunner launch sets this
   value. It wins when both hosts are set.
 - `ZEBRUNNER_CAPABILITIES` — The launch capabilities as JSON. A Zebrunner launch sets this value.
   The fixture merges these capabilities into the create request.
-- `REMOTE` — Forces the choice. `REMOTE=true` is remote. `REMOTE=false` is local. When `REMOTE`
-  is not set, the fixture runs remote if `REMOTE_HOST` or `ZEBRUNNER_HUB_URL` is set.
+- `REMOTE_SESSION_ENABLED` — Forces the choice. `REMOTE_SESSION_ENABLED=true` is remote. `REMOTE_SESSION_ENABLED=false` is local. When `REMOTE_SESSION_ENABLED`
+  is not set, the fixture runs remote if `REMOTE_HOST_URL` or `ZEBRUNNER_HUB_URL` is set.
 
 An absent host or credential fails the test early with a clear message.
 
 ### Session mode
 
-- `REMOTE_REFRESH` — A boolean. `true` selects refresh mode. Default: `false`.
+- `REMOTE_SESSION_REFRESH` — A boolean. `true` selects refresh mode. Default: `false`.
 
 ### Browser
 
 - `SESSION_BROWSER_NAME` — The default engine for a local or a remote run. Values: `chromium`,
   `chrome`, `edge`, `firefox`, `webkit`, or `safari`. Default: `chromium`. The device projects set
   the engine per test with capabilities, so this value does not apply to the device spec.
-- `REMOTE_PLAYWRIGHT_HEADLESS` — A boolean. Default: `false`. The config runs headed by default.
-- `REMOTE_PLAYWRIGHT_VERSION` — The Playwright version, for example `1.58.2`. Default: the
+- `HEADLESS` — A boolean that sets the Playwright `headless` option. Default: `false`. The config runs headed by default.
+- `REMOTE_SESSION_PLAYWRIGHT_VERSION` — The Playwright version, for example `1.58.2`. Default: the
   installed `@playwright/test` version.
 
 ### Download tests
@@ -246,25 +246,25 @@ An absent host or credential fails the test early with a clear message.
 
 The project sends these values in `zebrunner:options`.
 
-- `REMOTE_BROWSER_CPU` — Session CPU units. Playwright uses a minimum of 1024.
-- `REMOTE_BROWSER_MEMORY` — Session memory in MB. Playwright uses a minimum of 2048.
-- `REMOTE_BROWSER_ENABLE_VIDEO` — Video record. Default: `true`.
-- `REMOTE_BROWSER_ENABLE_VNC` — Live VNC. Default: `true`.
-- `REMOTE_BROWSER_ENABLE_LOG` — Default: `true`.
-- `REMOTE_BROWSER_ENABLE_DEBUG` — Default: `false`.
-- `REMOTE_IDLE_TIMEOUT` — Seconds. Default: `300`. A larger value is reduced to the platform maximum.
-- `REMOTE_MAX_TIMEOUT` — Seconds. The hard limit on session life.
-- `REMOTE_BROWSER_SCREEN_RESOLUTION` — Format `WxHxD`. Default: `1920x1080x24`.
-- `REMOTE_BROWSER_VIDEO_SCREEN_SIZE` — Default: the screen resolution.
-- `REMOTE_BROWSER_FRAME_RATE` — Default: `12`.
-- `REMOTE_BROWSER_TIME_ZONE` — An IANA name, for example `Europe/Kyiv`.
+- `REMOTE_SESSION_BROWSER_CPU` — Session CPU units. Playwright uses a minimum of 1024.
+- `REMOTE_SESSION_BROWSER_MEMORY` — Session memory in MB. Playwright uses a minimum of 2048.
+- `REMOTE_SESSION_BROWSER_ENABLE_VIDEO` — Video record. Default: `true`.
+- `REMOTE_SESSION_BROWSER_ENABLE_VNC` — Live VNC. Default: `true`.
+- `REMOTE_SESSION_BROWSER_ENABLE_LOG` — Default: `true`.
+- `REMOTE_SESSION_BROWSER_ENABLE_DEBUG` — Default: `false`.
+- `REMOTE_SESSION_IDLE_TIMEOUT` — Seconds. Default: `300`. A larger value is reduced to the platform maximum.
+- `REMOTE_SESSION_MAX_TIMEOUT` — Seconds. The hard limit on session life.
+- `REMOTE_SESSION_BROWSER_SCREEN_RESOLUTION` — Format `WxHxD`. Default: `1920x1080x24`.
+- `REMOTE_SESSION_BROWSER_VIDEO_SCREEN_SIZE` — Default: the screen resolution.
+- `REMOTE_SESSION_BROWSER_FRAME_RATE` — Default: `12`.
+- `REMOTE_SESSION_BROWSER_TIME_ZONE` — An IANA name, for example `Europe/Kyiv`.
 
 ### Timeouts
 
 - `TEST_TIMEOUT_MS` — The Playwright test timeout. Default: `120000`.
 - `REMOTE_SESSION_CREATE_TIMEOUT_MS` — The timeout for the create request. Default: `600000`.
-- `REMOTE_PLAYWRIGHT_CONNECT_TIMEOUT_MS` — The timeout for the WebSocket connect. Default: `120000`.
-- `REMOTE_PLAYWRIGHT_REFRESH_TIMEOUT_MS` — The timeout for the refresh request. Default: `150000`.
+- `REMOTE_SESSION_CONNECT_TIMEOUT_MS` — The timeout for the WebSocket connect. Default: `120000`.
+- `REMOTE_SESSION_REFRESH_TIMEOUT_MS` — The timeout for the refresh request. Default: `150000`.
 - `REMOTE_SESSION_DELETE_TIMEOUT_MS` — The timeout for the delete request. Default: `30000`.
 
 ### Runner
@@ -381,7 +381,7 @@ workers used = min(workers, number of independent units)
 ## Troubleshooting
 
 - `returned non-JSON` — ESG returned an HTML page. The common cause is a wrong credential. Check
-  the user and password in `REMOTE_HOST` or `ZEBRUNNER_HUB_URL`.
+  the user and password in `REMOTE_HOST_URL` or `ZEBRUNNER_HUB_URL`.
 - `failed (<status>)` with an ESG message — ESG returned `{"value": {"error": "...", "message": "..."}}`.
   Read the ESG text for the cause.
 - `Missing remote credentials` — The host URL has no user or password. Put the credentials in the URL.

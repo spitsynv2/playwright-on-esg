@@ -6,7 +6,7 @@ browser. The fixture owns the session lifecycle: create, connect, refresh, and d
 do not manage sessions.
 
 ```ts
-import { test } from '@zebrunner/javascript-agent-playwright/remote';
+import { test } from '@zebrunner/javascript-agent-playwright/session-fixture';
 
 test('runs on ESG', async ({ page }) => {
   await page.goto('https://playwright.dev/');
@@ -37,14 +37,14 @@ cp .env.example .env
 
 The fixture selects local or remote from the environment:
 
-- `REMOTE=true` forces remote. `REMOTE=false` forces local.
-- When `REMOTE` is not set, the fixture runs remote if `REMOTE_HOST` or `ZEBRUNNER_HUB_URL` is set.
+- `REMOTE_SESSION_ENABLED=true` forces remote. `REMOTE_SESSION_ENABLED=false` forces local.
+- When `REMOTE_SESSION_ENABLED` is not set, the fixture runs remote if `REMOTE_HOST_URL` or `ZEBRUNNER_HUB_URL` is set.
 
 To run on ESG from your machine, set one host with the credentials in the URL:
 
 ```bash
 # .env
-REMOTE_HOST=https://user:password@engine.zebrunner.dev
+REMOTE_HOST_URL=https://user:password@engine.zebrunner.dev
 ```
 
 A Zebrunner launch sets `ZEBRUNNER_HUB_URL` and `ZEBRUNNER_CAPABILITIES` for you. The
@@ -77,7 +77,7 @@ npm run typecheck
 ```
 
 A bare file path runs under its project, so `npx playwright test <file>` picks the correct mode.
-`REMOTE_REFRESH=true` still forces refresh for any run. The refresh isolation suite runs on one
+`REMOTE_SESSION_REFRESH=true` still forces refresh for any run. The refresh isolation suite runs on one
 engine per run. Select the engine with `SESSION_BROWSER_NAME=firefox` (or `webkit`).
 
 See the [testing guide](docs/testing-guide.md) for the session model, the `remoteSession`

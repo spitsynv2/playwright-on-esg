@@ -1,4 +1,4 @@
-import { test } from '@zebrunner/javascript-agent-playwright/remote';
+import { test } from '@zebrunner/javascript-agent-playwright/session-fixture';
 
 import { runPlaywrightScenario } from '../src/scenario';
 

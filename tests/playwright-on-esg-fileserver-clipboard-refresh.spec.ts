@@ -1,4 +1,4 @@
-import { expect, test } from '@zebrunner/javascript-agent-playwright/remote';
+import { expect, test } from '@zebrunner/javascript-agent-playwright/session-fixture';
 
 import { CLIPBOARD_TEXT, verifyClipboard, verifyDownload } from '../src/fileserver';
 
