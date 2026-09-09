@@ -78,7 +78,7 @@ export default defineConfig<SessionTestOptions>({
           environment: process.env.REPORTING_LAUNCH_ENVIRONMENT ?? 'grid',
         },
         logs: {
-          flushIntervalMs: process.env.REPORTING_LOGS_FLUSH_INTERVAL_MS ?? 1000,
+          flushIntervalMillis: process.env.REPORTING_LOGS_FLUSH_INTERVAL_MILLIS ?? 1000,
         },
       },
     ],
