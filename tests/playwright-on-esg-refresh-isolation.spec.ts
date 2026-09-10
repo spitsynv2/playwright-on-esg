@@ -6,7 +6,7 @@ const ORIGIN = 'https://playwright.dev/';
 const MARKER_KEY = 'zebrunner_marker';
 const MARKER_VALUE = 'isolation-42';
 
-// Run in refresh mode: REMOTE_SESSION_REFRESH=true (engine via SESSION_BROWSER_NAME). The first
+// Run in refresh mode: REMOTE_SESSION_REUSE=true (engine via SESSION_BROWSER_NAME). The first
 // test seeds state on one generation; after the fixture refreshes, the next test must see a fresh
 // browser with an empty downloads path and none of the seeded state.
 test.describe.serial('Playwright refresh isolation', () => {

@@ -34,7 +34,7 @@ One session has four steps:
 ### Session modes
 
 The project selects the mode. See the `esg` and `refresh` projects in the "Projects and engines"
-section. `remoteOptions.refresh` on a project turns refresh on. `REMOTE_SESSION_REFRESH=true` forces
+section. `sessionOptions.reuseSession` on a project turns refresh on. `REMOTE_SESSION_REUSE=true` forces
 refresh for any run.
 
 - Per-test (the `esg` project) — The fixture creates one session for each test and deletes it at
@@ -225,7 +225,7 @@ An absent host or credential fails the test early with a clear message.
 
 ### Session mode
 
-- `REMOTE_SESSION_REFRESH` — A boolean. `true` selects refresh mode. Default: `false`.
+- `REMOTE_SESSION_REUSE` — A boolean. `true` selects refresh mode. Default: `false`.
 
 ### Browser
 
@@ -291,7 +291,7 @@ active only when `REPORTING_ENABLED` is `true` and both server values exist.
 - `esg` — The default spec and the fileserver-clipboard spec, in per-test mode. The engine comes
   from `SESSION_BROWSER_NAME`.
 - `refresh` — The refresh, parallel-refresh, refresh-isolation, and fileserver-clipboard-refresh
-  specs. It sets `remoteOptions.refresh` to `true`, so the fixture runs refresh mode without an
+  specs. It sets `sessionOptions.reuseSession` to `true`, so the fixture runs refresh mode without an
   env var. The engine comes from `SESSION_BROWSER_NAME`.
 - `device-webkit` — The device spec, filtered to the iPhone test with `grep`. It pins the session
   engine to `webkit` with `remoteOptions.capabilities.browserName`.

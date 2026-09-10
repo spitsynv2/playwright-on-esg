@@ -23,7 +23,7 @@ export default defineConfig<SessionTestOptions>({
   retries: Number(process.env.RETRIES || 0) || 0,
   timeout: testTimeoutMs,
   use: {
-    // Refresh and the default engine come from env (REMOTE_SESSION_REFRESH, SESSION_BROWSER_NAME).
+    // Reuse and the default engine come from env (REMOTE_SESSION_REUSE, SESSION_BROWSER_NAME).
     // Headed on the grid (VNC + video); HEADLESS=true forces headless for a local run.
     headless,
     // On by default. A remote run ignores this (Zebrunner shows the grid's
@@ -45,7 +45,7 @@ export default defineConfig<SessionTestOptions>({
     {
       name: 'refresh',
       testMatch: /-(refresh|parallel-refresh|refresh-isolation)\.spec\.ts$/,
-      use: { sessionOptions: { refresh: true } },
+      use: { sessionOptions: { reuseSession: true } },
     },
     // The device suite pins a fixed engine per test with session capabilities.
     {

@@ -77,7 +77,7 @@ npm run typecheck
 ```
 
 A bare file path runs under its project, so `npx playwright test <file>` picks the correct mode.
-`REMOTE_SESSION_REFRESH=true` still forces refresh for any run. The refresh isolation suite runs on one
+`REMOTE_SESSION_REUSE=true` still forces refresh for any run. The refresh isolation suite runs on one
 engine per run. Select the engine with `SESSION_BROWSER_NAME=firefox` (or `webkit`).
 
 See the [testing guide](docs/testing-guide.md) for the session model, the `remoteSession`
