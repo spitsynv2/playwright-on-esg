@@ -1,5 +1,5 @@
-import { test } from '@zebrunner/javascript-agent-playwright/session-fixture';
 import { expect } from '@playwright/test';
+import { test } from '@zebrunner/javascript-agent-playwright/session-fixture';
 
 // REMOTE_SESSION_ENABLED=false selects a local browser. These tests use shared
 // fixtures, so the same checks run against local and remote browsers.
@@ -49,6 +49,27 @@ test.describe('Playwright context options: local and remote parity', () => {
         expect(applied.width).toBe(900);
         expect(applied.height).toBe(700);
         expect(applied.dpr).toBeCloseTo(2);
+      } finally {
+        await context.close();
+      }
+    });
+  });
+
+  test.describe('1920x1080 viewport', () => {
+    test.use({
+      viewport: { width: 1920, height: 1080 },
+    });
+    test('sessionBrowser applies the default Playwright context viewport', async ({ sessionBrowser }) => {
+      const context = await sessionBrowser.newContext();
+      const page = await context.newPage();
+      try {
+        await page.goto('about:blank');
+        const viewport = await page.evaluate(() => ({
+          width: window.innerWidth,
+          height: window.innerHeight,
+        }));
+        expect(viewport.width).toBe(1920);
+        expect(viewport.height).toBe(1080);
       } finally {
         await context.close();
       }
