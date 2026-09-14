@@ -16,6 +16,10 @@ const testTimeoutMs = Number(process.env.TEST_TIMEOUT_MS || 120_000) || 120_000;
 // or a headed browser stops with "Missing X server or $DISPLAY".
 const headless = String(process.env.HEADLESS).toLowerCase() === 'true';
 
+// The reporting failure suite fails on purpose. `npm run test:reporting-failure`
+// sets this flag; nothing else registers the project.
+const failureSuiteEnabled = String(process.env.REPORTING_FAILURE_SUITE).toLowerCase() === 'true';
+
 export default defineConfig<SessionTestOptions>({
   testDir: './tests',
   fullyParallel: true,
@@ -39,8 +43,19 @@ export default defineConfig<SessionTestOptions>({
     // Per-test mode: one session per test, deleted at the end.
     {
       name: 'esg',
-      testMatch: /(playwright-on-esg|fileserver-clipboard|playwright-on-esg-rerun|playwright-on-esg-screenshot|playwright-on-esg-capabilities)\.spec\.ts$/,
+      testMatch:
+        /(playwright-on-esg|fileserver-clipboard|playwright-on-esg-rerun|playwright-on-esg-screenshot|playwright-on-esg-capabilities|playwright-on-esg-reporting)\.spec\.ts$/,
     },
+    // The failure suite fails on purpose, so it is only registered when asked
+    // for. Without the flag no project matches it and `npm test` stays green.
+    ...(failureSuiteEnabled
+      ? [
+          {
+            name: 'reporting-failure',
+            testMatch: /playwright-on-esg-reporting-failure\.spec\.ts$/,
+          },
+        ]
+      : []),
     // Refresh mode: one session per worker, refreshed between tests.
     {
       name: 'refresh',

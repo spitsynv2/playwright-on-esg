@@ -12,6 +12,8 @@
     "test:fileserver-clipboard": "playwright test fileserver-clipboard",
     "test:refresh-isolation": "playwright test playwright-on-esg-refresh-isolation.spec.ts",
     "test:device": "playwright test playwright-on-esg-device.spec.ts",
+    "test:reporting": "playwright test playwright-on-esg-reporting.spec.ts --project=esg",
+    "test:reporting-failure": "REPORTING_FAILURE_SUITE=true playwright test --project=reporting-failure",
     "typecheck": "tsc --noEmit"
   },
   "devDependencies": {
