@@ -34,6 +34,7 @@ export default defineConfig<SessionTestOptions>({
     // uploads every 'image/png' attachment to Zebrunner. Works local and remote.
     screenshot: 'on',
     trace: 'off',
+    viewport: { width: 1920, height: 1080 },
   },
   projects: [
     // Per-test mode: one session per test, deleted at the end.
