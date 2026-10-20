@@ -1,3 +1,4 @@
+import { setTimeout } from 'node:timers/promises';
 import { test } from '@playwright/test';
 
 import {
@@ -8,6 +9,10 @@ import {
   requireEsgCredentials,
   runPlaywrightFlow,
 } from '../src/playwright-esg';
+
+test.beforeEach(async () => {
+  await setTimeout(5_000);
+});
 
 async function openNavigateClose() {
   const sessionId = await createEsgSession();

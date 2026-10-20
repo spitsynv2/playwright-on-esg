@@ -1,3 +1,4 @@
+import { setTimeout } from 'node:timers/promises';
 import { expect, test } from '@playwright/test';
 import type { Page } from '@playwright/test';
 import { currentTest } from '@zebrunner/javascript-agent-playwright';
@@ -23,6 +24,10 @@ import {
   setEsgClipboard,
   viewportFor,
 } from '../src/playwright-esg';
+
+test.beforeEach(async () => {
+  await setTimeout(5_000);
+});
 
 const CLIPBOARD_TEXT = 'Zebrunner clipboard round-trip 42';
 

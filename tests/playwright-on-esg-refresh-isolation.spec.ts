@@ -1,3 +1,4 @@
+import { setTimeout } from 'node:timers/promises';
 import { expect, test } from '@playwright/test';
 import { currentTest } from '@zebrunner/javascript-agent-playwright';
 
@@ -18,6 +19,10 @@ import {
   requireEsgCredentials,
   viewportFor,
 } from '../src/playwright-esg';
+
+test.beforeEach(async () => {
+  await setTimeout(5_000);
+});
 
 const ORIGIN = 'https://playwright.dev/';
 const MARKER_KEY = 'zebrunner_marker';

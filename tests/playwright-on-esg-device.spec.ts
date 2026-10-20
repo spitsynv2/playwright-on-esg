@@ -1,3 +1,4 @@
+import { setTimeout } from 'node:timers/promises';
 import { devices, expect, test } from '@playwright/test';
 import { currentTest } from '@zebrunner/javascript-agent-playwright';
 
@@ -10,6 +11,10 @@ import {
   reportingCapabilities,
   requireEsgCredentials,
 } from '../src/playwright-esg';
+
+test.beforeEach(async () => {
+  await setTimeout(5_000);
+});
 
 // iPhone descriptors default to WebKit and Pixel descriptors to Chromium, so the ESG session
 // engine must match the descriptor. A mismatch connects the wrong browser to the descriptor.

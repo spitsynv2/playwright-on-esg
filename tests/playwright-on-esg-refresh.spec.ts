@@ -1,3 +1,4 @@
+import { setTimeout } from 'node:timers/promises';
 import { expect, test } from '@playwright/test';
 
 import {
@@ -11,6 +12,10 @@ import {
   requireEsgCredentials,
   runPlaywrightFlow,
 } from '../src/playwright-esg';
+
+test.beforeEach(async () => {
+  await setTimeout(5_000);
+});
 
 // One ESG task opened in beforeAll and closed in afterAll. Serial mode reruns the whole
 // group on retry, so a retried run opens a fresh session in the new worker.
