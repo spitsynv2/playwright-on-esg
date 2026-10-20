@@ -1,5 +1,10 @@
+import { setTimeout } from 'node:timers/promises';
 import { expect, test } from '@zebrunner/javascript-agent-playwright/session-fixture';
 import { devices, type Browser } from '@playwright/test';
+
+test.beforeEach(async () => {
+  await setTimeout(5_000);
+});
 
 // iPhone descriptors default to WebKit and Pixel descriptors to Chromium. The device-webkit and
 // device-chromium projects pin the session engine with capabilities and grep to the matching test.

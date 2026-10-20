@@ -1,6 +1,11 @@
+import { setTimeout } from 'node:timers/promises';
 import { test } from '@zebrunner/javascript-agent-playwright/session-fixture';
 import { expect } from '@playwright/test';
 import { currentTest } from '@zebrunner/javascript-agent-playwright';
+
+test.beforeEach(async () => {
+  await setTimeout(5_000);
+});
 
 // Screenshot smoke suite. It shows the two screenshot paths the agent reports:
 //   1. Config path: `use.screenshot: 'on'` makes Playwright capture a screenshot
