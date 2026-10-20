@@ -1,6 +1,11 @@
+import { setTimeout } from 'node:timers/promises';
 import { expect, test } from '@zebrunner/javascript-agent-playwright/session-fixture';
 
 import { downloadFilename, downloadInPage, downloadText } from '../src/scenario';
+
+test.beforeEach(async () => {
+  await setTimeout(5_000);
+});
 
 const ORIGIN = 'https://playwright.dev/';
 const MARKER_KEY = 'zebrunner_marker';

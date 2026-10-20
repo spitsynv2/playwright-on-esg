@@ -1,5 +1,10 @@
+import { setTimeout } from 'node:timers/promises';
 import { test } from '@zebrunner/javascript-agent-playwright/session-fixture';
 import { expect } from '@playwright/test';
+
+test.beforeEach(async () => {
+  await setTimeout(5_000);
+});
 
 // Smoke suite for Zebrunner reporting + rerun.
 //
