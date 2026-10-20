@@ -1,6 +1,11 @@
+import { setTimeout } from 'node:timers/promises';
 import { expect, test } from '@zebrunner/javascript-agent-playwright/session-fixture';
 
 import { CLIPBOARD_TEXT, verifyClipboard, verifyDownload } from '../src/fileserver';
+
+test.beforeEach(async () => {
+  await setTimeout(5_000);
+});
 
 // Refresh mode (the `refresh` project): the second test runs on the refreshed session and must
 // still reach both endpoints.

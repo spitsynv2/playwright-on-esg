@@ -1,6 +1,11 @@
+import { setTimeout } from 'node:timers/promises';
 import { test } from '@zebrunner/javascript-agent-playwright/session-fixture';
 
 import { CLIPBOARD_TEXT, verifyClipboard, verifyDownload } from '../src/fileserver';
+
+test.beforeEach(async () => {
+  await setTimeout(5_000);
+});
 
 test.describe('Playwright fileserver and clipboard on ESG', () => {
   test('serves a browser download over the download endpoint', async ({ page, remoteSession }) => {

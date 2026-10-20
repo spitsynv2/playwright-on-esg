@@ -1,6 +1,11 @@
+import { setTimeout } from 'node:timers/promises';
 import { expect } from '@playwright/test';
 import { currentTest } from '@zebrunner/javascript-agent-playwright';
 import { test } from '@zebrunner/javascript-agent-playwright/session-fixture';
+
+test.beforeEach(async () => {
+  await setTimeout(5_000);
+});
 
 // Failure reporting suite. These tests fail on purpose, so they live in their
 // own project (`reporting-failure`) and are never part of a green run. Run them

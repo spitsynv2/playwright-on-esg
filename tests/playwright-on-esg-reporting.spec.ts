@@ -1,9 +1,14 @@
+import { setTimeout } from 'node:timers/promises';
 import { expect } from '@playwright/test';
 import { currentLaunch, currentTest, zebrunner } from '@zebrunner/javascript-agent-playwright';
 import { test } from '@zebrunner/javascript-agent-playwright/session-fixture';
 import * as fs from 'fs';
 import * as os from 'os';
 import * as path from 'path';
+
+test.beforeEach(async () => {
+  await setTimeout(5_000);
+});
 
 // Reporting smoke suite. Every test exercises one group of the agent's reporting
 // API and states what to look for in Zebrunner, so a launch from this file is

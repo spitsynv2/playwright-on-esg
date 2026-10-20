@@ -1,5 +1,10 @@
+import { setTimeout } from 'node:timers/promises';
 import { expect } from '@playwright/test';
 import { test } from '@zebrunner/javascript-agent-playwright/session-fixture';
+
+test.beforeEach(async () => {
+  await setTimeout(5_000);
+});
 
 // REMOTE_SESSION_ENABLED=false selects a local browser. These tests use shared
 // fixtures, so the same checks run against local and remote browsers.
