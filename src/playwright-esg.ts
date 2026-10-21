@@ -3,6 +3,8 @@ import type { BrowserType, Download, Page } from '@playwright/test';
 import { currentTest } from '@zebrunner/javascript-agent-playwright';
 import playwrightPackage from '@playwright/test/package.json';
 
+import { openPage } from './navigation';
+
 const hub = process.env.ZEBRUNNER_HUB_URL ? new URL(process.env.ZEBRUNNER_HUB_URL) : undefined;
 
 export const esgHost = (process.env.ESG_HOST || hub?.origin || '').replace(/\/+$/, '');
@@ -177,7 +179,7 @@ export function reportingCapabilities(engineName: string, browserVersion: string
 
 export async function runPlaywrightScenario(page: Page): Promise<void> {
   // Navigation 1: the home page.
-  await page.goto('https://playwright.dev/', { waitUntil: 'commit' });
+  await openPage(page, 'https://playwright.dev/', { waitUntil: 'commit' });
   await expect(page).toHaveTitle(/Playwright/);
   await expect(page.getByRole('link', { name: 'Get started' })).toBeVisible();
   await page.waitForTimeout(stepPauseMs);

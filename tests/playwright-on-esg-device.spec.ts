@@ -1,4 +1,3 @@
-import { setTimeout } from 'node:timers/promises';
 import { devices, expect, test } from '@playwright/test';
 import { currentTest } from '@zebrunner/javascript-agent-playwright';
 
@@ -11,10 +10,7 @@ import {
   reportingCapabilities,
   requireEsgCredentials,
 } from '../src/playwright-esg';
-
-test.beforeEach(async () => {
-  await setTimeout(5_000);
-});
+import { openPage } from '../src/navigation';
 
 // iPhone descriptors default to WebKit and Pixel descriptors to Chromium, so the ESG session
 // engine must match the descriptor. A mismatch connects the wrong browser to the descriptor.
@@ -33,7 +29,7 @@ async function runDeviceEmulation(deviceName: string): Promise<void> {
       const context = await browser.newContext({ ...device });
       const page = await context.newPage();
       try {
-        await page.goto('https://playwright.dev/', { waitUntil: 'commit' });
+        await openPage(page, 'https://playwright.dev/', { waitUntil: 'commit' });
         await expect(page).toHaveTitle(/Playwright/);
 
         // WebKit on Linux reports maxTouchPoints 0 even with touch emulation, so combine signals.

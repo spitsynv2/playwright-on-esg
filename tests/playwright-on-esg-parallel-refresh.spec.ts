@@ -1,4 +1,3 @@
-import { setTimeout } from 'node:timers/promises';
 import { expect, test } from '@playwright/test';
 
 import {
@@ -12,10 +11,6 @@ import {
   requireEsgCredentials,
   runPlaywrightFlow,
 } from '../src/playwright-esg';
-
-test.beforeEach(async () => {
-  await setTimeout(5_000);
-});
 
 // Each call adds one serial group. A serial group is one parallel unit, so two groups
 // run on two workers at the same time, each with its own ESG task and refresh.

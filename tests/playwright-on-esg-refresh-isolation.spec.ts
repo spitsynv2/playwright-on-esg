@@ -1,4 +1,3 @@
-import { setTimeout } from 'node:timers/promises';
 import { expect, test } from '@playwright/test';
 import { currentTest } from '@zebrunner/javascript-agent-playwright';
 
@@ -19,10 +18,7 @@ import {
   requireEsgCredentials,
   viewportFor,
 } from '../src/playwright-esg';
-
-test.beforeEach(async () => {
-  await setTimeout(5_000);
-});
+import { openPage } from '../src/navigation';
 
 const ORIGIN = 'https://playwright.dev/';
 const MARKER_KEY = 'zebrunner_marker';
@@ -50,6 +46,7 @@ for (const engine of browsersUnderTest()) {
           const context = await browser.newContext({ acceptDownloads: true, viewport: viewportFor(engineName) });
           const page = await context.newPage();
           try {
+            await openPage(page, 'about:blank');
             const download = await downloadInPage(page, downloadText, downloadFilename);
             expect(await download.failure(), 'browser download failed').toBeNull();
             expect(
@@ -95,7 +92,7 @@ for (const engine of browsersUnderTest()) {
           try {
             await context.addCookies([{ name: MARKER_KEY, value: MARKER_VALUE, url: ORIGIN }]);
             const page = await context.newPage();
-            await page.goto(ORIGIN, { waitUntil: 'domcontentloaded' });
+            await openPage(page, ORIGIN, { waitUntil: 'domcontentloaded' });
             await page.evaluate(
               ([key, value]) => localStorage.setItem(key, value),
               [MARKER_KEY, MARKER_VALUE] as const,

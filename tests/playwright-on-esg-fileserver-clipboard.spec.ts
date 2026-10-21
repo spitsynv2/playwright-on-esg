@@ -1,4 +1,3 @@
-import { setTimeout } from 'node:timers/promises';
 import { expect, test } from '@playwright/test';
 import type { Page } from '@playwright/test';
 import { currentTest } from '@zebrunner/javascript-agent-playwright';
@@ -24,10 +23,7 @@ import {
   setEsgClipboard,
   viewportFor,
 } from '../src/playwright-esg';
-
-test.beforeEach(async () => {
-  await setTimeout(5_000);
-});
+import { openPage } from '../src/navigation';
 
 const CLIPBOARD_TEXT = 'Zebrunner clipboard round-trip 42';
 
@@ -41,6 +37,7 @@ async function verifyClipboard(sessionId: string, text: string): Promise<void> {
 
 // Downloads a file in the page, verifies the fileserver serves it, attaches it, then removes it.
 async function verifyDownload(page: Page, sessionId: string): Promise<void> {
+  await openPage(page, 'about:blank');
   const download = await downloadInPage(page, downloadText, downloadFilename);
   // failure() resolves once the download finishes writing; null means success.
   expect(await download.failure(), 'browser download failed').toBeNull();
@@ -100,7 +97,7 @@ test.describe('Playwright fileserver and clipboard on ESG', () => {
         currentTest.attachSessionCapabilities(reportingCapabilities(engineName, browser.version()), sessionId);
 
         const page = await browser.newPage({ viewport: viewportFor(engineName) });
-        await page.goto('https://playwright.dev/', { waitUntil: 'commit' });
+        await openPage(page, 'https://playwright.dev/', { waitUntil: 'commit' });
 
         await verifyClipboard(sessionId, CLIPBOARD_TEXT);
       } finally {
