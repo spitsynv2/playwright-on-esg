@@ -1,11 +1,6 @@
-import { setTimeout } from 'node:timers/promises';
 import { test } from '@zebrunner/javascript-agent-playwright/session-fixture';
 
 import { runPlaywrightScenario } from '../src/scenario';
-
-test.beforeEach(async () => {
-  await setTimeout(5_000);
-});
 
 // Default mode: the fixture creates one ESG session per test and deletes it at the end.
 test.describe('Playwright on ESG', () => {

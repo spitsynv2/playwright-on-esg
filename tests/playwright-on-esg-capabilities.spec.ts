@@ -1,10 +1,7 @@
-import { setTimeout } from 'node:timers/promises';
 import { expect } from '@playwright/test';
 import { test } from '@zebrunner/javascript-agent-playwright/session-fixture';
 
-test.beforeEach(async () => {
-  await setTimeout(5_000);
-});
+import { openPage } from '../src/navigation';
 
 // REMOTE_SESSION_ENABLED=false selects a local browser. These tests use shared
 // fixtures, so the same checks run against local and remote browsers.
@@ -19,7 +16,7 @@ test.describe('Playwright context options: local and remote parity', () => {
     });
 
     test('page fixture applies context options and viewport', async ({ page }) => {
-      await page.goto('about:blank');
+      await openPage(page, 'about:blank');
 
       const applied = await page.evaluate(() => ({
         language: navigator.language,
@@ -45,7 +42,7 @@ test.describe('Playwright context options: local and remote parity', () => {
       });
       const page = await context.newPage();
       try {
-        await page.goto('about:blank');
+        await openPage(page, 'about:blank');
         const applied = await page.evaluate(() => ({
           width: window.innerWidth,
           height: window.innerHeight,
@@ -68,7 +65,7 @@ test.describe('Playwright context options: local and remote parity', () => {
       const context = await sessionBrowser.newContext();
       const page = await context.newPage();
       try {
-        await page.goto('about:blank');
+        await openPage(page, 'about:blank');
         const viewport = await page.evaluate(() => ({
           width: window.innerWidth,
           height: window.innerHeight,
@@ -85,7 +82,7 @@ test.describe('Playwright context options: local and remote parity', () => {
     const context = await sessionBrowser.newContext();
     const page = await context.newPage();
     try {
-      await page.goto('about:blank');
+      await openPage(page, 'about:blank');
       const viewport = await page.evaluate(() => ({
         width: window.innerWidth,
         height: window.innerHeight,
