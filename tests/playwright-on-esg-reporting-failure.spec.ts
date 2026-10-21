@@ -1,11 +1,8 @@
-import { setTimeout } from 'node:timers/promises';
 import { expect } from '@playwright/test';
 import { currentTest } from '@zebrunner/javascript-agent-playwright';
 import { test } from '@zebrunner/javascript-agent-playwright/session-fixture';
 
-test.beforeEach(async () => {
-  await setTimeout(5_000);
-});
+import { openPage } from '../src/navigation';
 
 // Failure reporting suite. These tests fail on purpose, so they live in their
 // own project (`reporting-failure`) and are never part of a green run. Run them
@@ -25,7 +22,7 @@ test.describe('Zebrunner failure reporting', () => {
     currentTest.attachLabel('expected-result', 'failed');
     currentTest.log.info('Navigating before the deliberate failure');
 
-    await page.goto('https://playwright.dev/', { waitUntil: 'commit' });
+    await openPage(page, 'https://playwright.dev/', { waitUntil: 'commit' });
 
     // The agent must report this diff as the failure reason.
     await expect(page, 'deliberate failure: the title is "Playwright"').toHaveTitle(/NotThePlaywrightTitle/, {
@@ -38,7 +35,7 @@ test.describe('Zebrunner failure reporting', () => {
     currentTest.log.warn(`Attempt ${testInfo.retry + 1} (retry index ${testInfo.retry})`);
     currentTest.attachLabel('expected-result', 'failed');
 
-    await page.goto('https://playwright.dev/', { waitUntil: 'commit' });
+    await openPage(page, 'https://playwright.dev/', { waitUntil: 'commit' });
     currentTest.attachScreenshot(await page.screenshot());
 
     await expect(

@@ -1,11 +1,6 @@
-import { setTimeout } from 'node:timers/promises';
 import { expect, test } from '@zebrunner/javascript-agent-playwright/session-fixture';
 
 import { runPlaywrightScenario } from '../src/scenario';
-
-test.beforeEach(async () => {
-  await setTimeout(5_000);
-});
 
 // Refresh mode (set by the `refresh` project): one ESG session per worker, refreshed between
 // tests, deleted at worker end. A serial group runs in one worker, so the session is shared.

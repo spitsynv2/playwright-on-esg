@@ -1,10 +1,7 @@
-import { setTimeout } from 'node:timers/promises';
 import { expect, test } from '@zebrunner/javascript-agent-playwright/session-fixture';
 import { devices, type Browser } from '@playwright/test';
 
-test.beforeEach(async () => {
-  await setTimeout(5_000);
-});
+import { openPage } from '../src/navigation';
 
 // iPhone descriptors default to WebKit and Pixel descriptors to Chromium. The device-webkit and
 // device-chromium projects pin the session engine with capabilities and grep to the matching test.
@@ -24,7 +21,7 @@ async function runDeviceEmulation(sessionBrowser: Browser, deviceName: string): 
   const context = await sessionBrowser.newContext({ ...device });
   const page = await context.newPage();
   try {
-    await page.goto('https://playwright.dev/', { waitUntil: 'commit' });
+    await openPage(page, 'https://playwright.dev/', { waitUntil: 'commit' });
     await expect(page).toHaveTitle(/Playwright/);
 
     // WebKit on Linux reports maxTouchPoints 0 even with touch emulation, so combine signals.

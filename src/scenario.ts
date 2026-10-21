@@ -1,6 +1,8 @@
 import { expect } from '@playwright/test';
 import type { Download, Page } from '@playwright/test';
 
+import { openPage } from './navigation';
+
 const stepPauseMs = Number(process.env.STEP_PAUSE_MS || 0) || 0;
 
 // Data for the download tests, overridable from the environment.
@@ -9,7 +11,7 @@ export const downloadFilename = process.env.DOWNLOAD_FILENAME || 'hello.txt';
 
 export async function runPlaywrightScenario(page: Page): Promise<void> {
   // Navigation 1: the home page.
-  await page.goto('https://playwright.dev/', { waitUntil: 'commit' });
+  await openPage(page, 'https://playwright.dev/', { waitUntil: 'commit' });
   await expect(page).toHaveTitle(/Playwright/);
   await expect(page.getByRole('link', { name: 'Get started' })).toBeVisible();
   await page.waitForTimeout(stepPauseMs);

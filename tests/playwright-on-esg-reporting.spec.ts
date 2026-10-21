@@ -1,4 +1,3 @@
-import { setTimeout } from 'node:timers/promises';
 import { expect } from '@playwright/test';
 import { currentLaunch, currentTest, zebrunner } from '@zebrunner/javascript-agent-playwright';
 import { test } from '@zebrunner/javascript-agent-playwright/session-fixture';
@@ -6,9 +5,7 @@ import * as fs from 'fs';
 import * as os from 'os';
 import * as path from 'path';
 
-test.beforeEach(async () => {
-  await setTimeout(5_000);
-});
+import { openPage } from '../src/navigation';
 
 // Reporting smoke suite. Every test exercises one group of the agent's reporting
 // API and states what to look for in Zebrunner, so a launch from this file is
@@ -49,7 +46,7 @@ test.describe('Zebrunner reporting on ESG', () => {
     currentTest.log.debug('DEBUG level log message');
     currentTest.log.trace('TRACE level log message');
 
-    await page.goto('https://playwright.dev/', { waitUntil: 'commit' });
+    await openPage(page, 'https://playwright.dev/', { waitUntil: 'commit' });
     await expect(page).toHaveTitle(/Playwright/);
 
     // console.log() reaches Zebrunner too, unless logs.ignoreConsole is on.
@@ -72,7 +69,7 @@ test.describe('Zebrunner reporting on ESG', () => {
     // One key can hold several values.
     currentTest.attachLabel('priority', 'high', 'release-blocker');
 
-    await page.goto('https://playwright.dev/', { waitUntil: 'commit' });
+    await openPage(page, 'https://playwright.dev/', { waitUntil: 'commit' });
     await expect(page.getByRole('link', { name: 'Get started' })).toBeVisible();
   });
 
@@ -81,7 +78,7 @@ test.describe('Zebrunner reporting on ESG', () => {
   test('reports artifact references and artifacts', async ({ page }) => {
     currentTest.attachArtifactReference('System under test', 'https://playwright.dev/');
 
-    await page.goto('https://playwright.dev/', { waitUntil: 'commit' });
+    await openPage(page, 'https://playwright.dev/', { waitUntil: 'commit' });
     await expect(page).toHaveTitle(/Playwright/);
 
     const pageHtml = await page.content();
@@ -103,7 +100,7 @@ test.describe('Zebrunner reporting on ESG', () => {
   // Zebrunner: the test shows two screenshots from the agent API, plus the
   // end-of-test screenshot Playwright takes when use.screenshot is not 'off'.
   test('reports screenshots from a buffer and from a path', async ({ page }) => {
-    await page.goto('https://playwright.dev/', { waitUntil: 'commit' });
+    await openPage(page, 'https://playwright.dev/', { waitUntil: 'commit' });
     await expect(page).toHaveTitle(/Playwright/);
 
     // A Buffer straight from Playwright.
@@ -127,7 +124,7 @@ test.describe('Zebrunner reporting on ESG', () => {
     zebrunner.testCaseKey(`${projectKey}-2`, `${projectKey}-3`);
     zebrunner.testCaseStatus(process.env.REPORTING_TCM_CASE_SKIPPED || `${projectKey}-4`, 'SKIPPED');
 
-    await page.goto('https://playwright.dev/', { waitUntil: 'commit' });
+    await openPage(page, 'https://playwright.dev/', { waitUntil: 'commit' });
     await expect(page).toHaveTitle(/Playwright/);
   });
 
@@ -149,7 +146,7 @@ test.describe('Zebrunner reporting on ESG', () => {
       currentTest.attachArtifactReference('ESG session', remoteSession.sessionId);
       currentTest.log.info(`ESG session ${remoteSession.sessionId} on ${remoteSession.browserName}`);
 
-      await page.goto('https://playwright.dev/', { waitUntil: 'commit' });
+      await openPage(page, 'https://playwright.dev/', { waitUntil: 'commit' });
       await expect(page).toHaveTitle(/Playwright/);
 
       // Video on a remote run is the grid's server-side recording, so the
@@ -164,7 +161,7 @@ test.describe('Zebrunner reporting on ESG', () => {
     currentTest.revertRegistration();
 
     // revertRegistration() does not stop the test; the rest still runs.
-    await page.goto('https://playwright.dev/', { waitUntil: 'commit' });
+    await openPage(page, 'https://playwright.dev/', { waitUntil: 'commit' });
     await expect(page).toHaveTitle(/Playwright/);
   });
 
@@ -173,7 +170,7 @@ test.describe('Zebrunner reporting on ESG', () => {
   // itself stays SKIPPED.
   test('reports a skipped test', async ({ page }) => {
     test.skip(true, 'Reported to Zebrunner as SKIPPED on purpose');
-    await page.goto('https://playwright.dev/', { waitUntil: 'commit' });
+    await openPage(page, 'https://playwright.dev/', { waitUntil: 'commit' });
   });
 });
 
