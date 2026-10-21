@@ -1,10 +1,7 @@
-import { setTimeout } from 'node:timers/promises';
 import { test } from '@zebrunner/javascript-agent-playwright/session-fixture';
 import { expect } from '@playwright/test';
 
-test.beforeEach(async () => {
-  await setTimeout(5_000);
-});
+import { openPage } from '../src/navigation';
 
 // No-project variant of the Zebrunner reporting + rerun smoke suite.
 //
@@ -20,13 +17,13 @@ test.beforeEach(async () => {
 // that one test.
 test.describe('Zebrunner reporting and rerun smoke (no project)', () => {
   test('passes: playwright.dev shows the expected title', async ({ page }) => {
-    await page.goto('https://playwright.dev/', { waitUntil: 'commit' });
+    await openPage(page, 'https://playwright.dev/', { waitUntil: 'commit' });
     await expect(page).toHaveTitle(/Playwright/);
     await expect(page.getByRole('link', { name: 'Get started' })).toBeVisible();
   });
 
   test('fails on purpose: asserts a title that never matches', async ({ page }) => {
-    await page.goto('https://playwright.dev/', { waitUntil: 'commit' });
+    await openPage(page, 'https://playwright.dev/', { waitUntil: 'commit' });
     // Deliberately wrong: this assertion always fails, which exercises failure
     // reporting and lets you relaunch this single test from Zebrunner.
     await expect(page).toHaveTitle(/This Title Should Never Match/);

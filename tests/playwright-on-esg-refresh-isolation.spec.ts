@@ -1,11 +1,7 @@
-import { setTimeout } from 'node:timers/promises';
 import { expect, test } from '@zebrunner/javascript-agent-playwright/session-fixture';
 
 import { downloadFilename, downloadInPage, downloadText } from '../src/scenario';
-
-test.beforeEach(async () => {
-  await setTimeout(5_000);
-});
+import { openPage } from '../src/navigation';
 
 const ORIGIN = 'https://playwright.dev/';
 const MARKER_KEY = 'zebrunner_marker';
@@ -30,7 +26,7 @@ test.describe.serial('Playwright refresh isolation', () => {
     ).toBeGreaterThan(0);
 
     await page.context().addCookies([{ name: MARKER_KEY, value: MARKER_VALUE, url: ORIGIN }]);
-    await page.goto(ORIGIN, { waitUntil: 'domcontentloaded' });
+    await openPage(page, ORIGIN, { waitUntil: 'domcontentloaded' });
     await page.evaluate(([key, value]) => localStorage.setItem(key, value), [MARKER_KEY, MARKER_VALUE] as const);
     expect(await page.evaluate((key) => localStorage.getItem(key), MARKER_KEY)).toBe(MARKER_VALUE);
   });
@@ -50,7 +46,7 @@ test.describe.serial('Playwright refresh isolation', () => {
       expect(cookies.some((cookie) => cookie.name === MARKER_KEY), 'seeded cookie survived refresh').toBe(false);
 
       const page = await context.newPage();
-      await page.goto(ORIGIN, { waitUntil: 'domcontentloaded' });
+      await openPage(page, ORIGIN, { waitUntil: 'domcontentloaded' });
       expect(
         await page.evaluate((key) => localStorage.getItem(key), MARKER_KEY),
         'seeded localStorage survived refresh',

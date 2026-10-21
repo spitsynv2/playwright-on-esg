@@ -1,11 +1,7 @@
-import { setTimeout } from 'node:timers/promises';
 import { expect, test } from '@zebrunner/javascript-agent-playwright/session-fixture';
 
 import { CLIPBOARD_TEXT, verifyClipboard, verifyDownload } from '../src/fileserver';
-
-test.beforeEach(async () => {
-  await setTimeout(5_000);
-});
+import { openPage } from '../src/navigation';
 
 // Refresh mode (the `refresh` project): the second test runs on the refreshed session and must
 // still reach both endpoints.
@@ -14,7 +10,7 @@ test.describe.serial('Playwright fileserver and clipboard after refresh', () => 
 
   test('establishes the first generation', async ({ page, remoteSession }) => {
     lastGeneration = remoteSession.generation ?? 0;
-    await page.goto('https://playwright.dev/', { waitUntil: 'commit' });
+    await openPage(page, 'https://playwright.dev/', { waitUntil: 'commit' });
   });
 
   test('download and clipboard still work after refresh', async ({ page, remoteSession }) => {

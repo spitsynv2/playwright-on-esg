@@ -3,6 +3,7 @@ import type { Page } from '@playwright/test';
 import type { RemoteSession } from '@zebrunner/javascript-agent-playwright/session-fixture';
 
 import { downloadFilename, downloadInPage, downloadText } from './scenario';
+import { openPage } from './navigation';
 
 export const CLIPBOARD_TEXT = 'Zebrunner clipboard round-trip 42';
 
@@ -16,6 +17,7 @@ export async function verifyClipboard(remoteSession: RemoteSession, text: string
 
 // Downloads a file in the page, verifies the fileserver serves it, attaches it, then removes it.
 export async function verifyDownload(page: Page, remoteSession: RemoteSession): Promise<void> {
+  await openPage(page, 'about:blank');
   const download = await downloadInPage(page, downloadText, downloadFilename);
   // failure() resolves once the download finishes writing; null means success.
   expect(await download.failure(), 'browser download failed').toBeNull();
